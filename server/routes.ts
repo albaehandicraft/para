@@ -291,6 +291,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put("/api/geofence/:id", authenticateToken, requireRole(["superadmin", "admin"]), async (req: AuthRequest, res) => {
+    try {
+      const zoneId = parseInt(req.params.id);
+      const updates = insertGeofenceZoneSchema.partial().parse(req.body);
+      
+      const zone = await storage.updateGeofenceZone(zoneId, updates);
+      
+      if (!zone) {
+        return res.status(404).json({ message: "Geofence zone not found" });
+      }
+      
+      res.json(zone);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update geofence zone" });
+    }
+  });
+
+  app.delete("/api/geofence/:id", authenticateToken, requireRole(["superadmin", "admin"]), async (req: AuthRequest, res) => {
+    try {
+      const zoneId = parseInt(req.params.id);
+      
+      const success = await storage.deleteGeofenceZone(zoneId);
+      
+      if (!success) {
+        return res.status(404).json({ message: "Geofence zone not found" });
+      }
+      
+      res.json({ message: "Geofence zone deleted successfully" });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to delete geofence zone" });
+    }
+  });
+
   // Dashboard metrics
   app.get("/api/dashboard/metrics", authenticateToken, async (req, res) => {
     try {

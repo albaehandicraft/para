@@ -39,6 +39,7 @@ export interface IStorage {
   createGeofenceZone(zoneData: InsertGeofenceZone): Promise<GeofenceZone>;
   getActiveGeofenceZones(): Promise<GeofenceZone[]>;
   updateGeofenceZone(id: number, updates: Partial<InsertGeofenceZone>): Promise<GeofenceZone | undefined>;
+  deleteGeofenceZone(id: number): Promise<boolean>;
   
   // Barcode scanning
   logBarcodeScan(packageId: number, scannedBy: number, scanType: string, location?: { lat: number; lng: number }): Promise<void>;

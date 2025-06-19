@@ -15,6 +15,7 @@ import UserManagement from "@/pages/UserManagement";
 import AttendanceTracking from "@/pages/AttendanceTracking";
 import KurirDashboard from "@/pages/KurirDashboard";
 import PICDashboard from "@/pages/PICDashboard";
+import GeofencingSetup from "@/pages/GeofencingSetup";
 import NotFound from "@/pages/not-found";
 
 // Update query client to include auth token
@@ -172,10 +173,7 @@ function Router() {
       <Route path="/geofencing">
         <ProtectedRoute>
           <RoleGuard roles={["superadmin", "admin"]} fallback={<NotFound />}>
-            <div className="p-6">
-              <h1 className="text-2xl font-bold mb-4">Geofencing Setup</h1>
-              <p>Geofencing management functionality will be implemented here.</p>
-            </div>
+            <GeofencingSetup />
           </RoleGuard>
         </ProtectedRoute>
       </Route>
