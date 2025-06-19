@@ -3,7 +3,7 @@ import {
   salaryRecords, barcodeScanLogs,
   type User, type InsertUser, type Package, type InsertPackage,
   type Attendance, type InsertAttendance, type GeofenceZone, type InsertGeofenceZone,
-  type UserRole, type PackageStatus
+  type UserRole, type PackageStatus, type AttendanceStatus
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, sql, gte, lte, count } from "drizzle-orm";
@@ -197,7 +197,10 @@ export class DatabaseStorage implements IStorage {
   async createAttendance(attendanceData: InsertAttendance): Promise<Attendance> {
     const [att] = await db
       .insert(attendance)
-      .values(attendanceData)
+      .values({
+        ...attendanceData,
+        status: attendanceData.status || "present",
+      })
       .returning();
     return att;
   }
