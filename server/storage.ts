@@ -197,10 +197,7 @@ export class DatabaseStorage implements IStorage {
   async createAttendance(attendanceData: InsertAttendance): Promise<Attendance> {
     const [att] = await db
       .insert(attendance)
-      .values({
-        ...attendanceData,
-        status: attendanceData.status || "present",
-      })
+      .values(attendanceData)
       .returning();
     return att;
   }

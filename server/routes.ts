@@ -100,6 +100,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const packages = await storage.getPackages(50);
       res.json(packages);
     } catch (error) {
+      console.error("Error fetching packages:", error);
       res.status(500).json({ message: "Failed to fetch packages" });
     }
   });
@@ -300,22 +301,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Handle client-side routing - serve index.html for all non-API routes
-  app.get('*', (req, res, next) => {
-    // Skip API routes and static files
-    if (req.path.startsWith('/api/') || req.path.startsWith('/__') || req.path.includes('.')) {
-      return next();
-    }
-    
-    // For development, let Vite handle SPA routing
-    if (process.env.NODE_ENV === 'development') {
-      return next();
-    }
-    
-    // For production, serve index.html
-    const indexPath = path.join(process.cwd(), 'public', 'index.html');
-    res.sendFile(indexPath);
-  });
+
 
   const httpServer = createServer(app);
   return httpServer;
