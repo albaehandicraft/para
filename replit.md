@@ -119,6 +119,7 @@ This is a full-stack delivery management system built with React, Express.js, an
 ## Changelog
 
 - June 19, 2025. Initial setup
+- June 19, 2025. Configured external Neon database connection and created demo users
 
 ## User Preferences
 
