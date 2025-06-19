@@ -13,10 +13,15 @@ export async function apiRequest(
   data?: unknown | undefined,
 ): Promise<Response> {
   const token = localStorage.getItem("auth_token");
-  const headers: Record<string, string> = {
-    ...(data && { "Content-Type": "application/json" }),
-    ...(token && { Authorization: `Bearer ${token}` }),
-  };
+  const headers: Record<string, string> = {};
+  
+  if (data) {
+    headers["Content-Type"] = "application/json";
+  }
+  
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
 
   const res = await fetch(url, {
     method,

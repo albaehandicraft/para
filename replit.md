@@ -18,8 +18,8 @@ This is a full-stack delivery management system built with React, Express.js, an
 - **Runtime**: Node.js with Express.js framework
 - **Language**: TypeScript for type safety
 - **Database ORM**: Drizzle ORM with PostgreSQL
-- **Authentication**: JWT-based authentication with bcrypt password hashing
-- **Session Management**: Express sessions with PostgreSQL store
+- **Authentication**: Custom JWT-based authentication using Neon database users table
+- **Password Security**: bcrypt hashing for secure password storage
 
 ### Database Design
 - **Primary Database**: PostgreSQL (configured for Neon serverless)
