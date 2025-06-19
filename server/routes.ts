@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import path from "path";
 import { storage } from "./storage";
 import { authenticateToken, requireRole, generateToken, type AuthRequest } from "./middleware/auth";
 import { BarcodeService } from "./services/barcode";
@@ -297,6 +298,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch metrics" });
     }
+  });
+
+  // Handle client-side routing - serve index.html for all non-API routes
+  app.get('*', (req, res, next) => {
+    // Skip API routes and static files
+    if (req.path.startsWith('/api/') || req.path.startsWith('/__') || req.path.includes('.')) {
+      return next();
+    }
+    
+    // For development, let Vite handle SPA routing
+    if (process.env.NODE_ENV === 'development') {
+      return next();
+    }
+    
+    // For production, serve index.html
+    const indexPath = path.join(process.cwd(), 'public', 'index.html');
+    res.sendFile(indexPath);
   });
 
   const httpServer = createServer(app);
