@@ -163,24 +163,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPackages(limit?: number): Promise<Package[]> {
-    const query = db.select({
-      id: packages.id,
-      packageId: packages.packageId,
-      barcode: packages.barcode,
-      recipientName: packages.recipientName,
-      recipientPhone: packages.recipientPhone,
-      recipientAddress: packages.recipientAddress,
-      priority: packages.priority,
-      status: packages.status,
-      assignedKurirId: packages.assignedKurirId,
-      createdBy: packages.createdBy,
-      approvedBy: packages.approvedBy,
-      deliveredAt: packages.deliveredAt,
-      deliveryProof: packages.deliveryProof,
-      notes: packages.notes,
-      createdAt: packages.createdAt,
-      updatedAt: packages.updatedAt,
-    }).from(packages).orderBy(desc(packages.createdAt));
+    const query = db.select().from(packages).orderBy(desc(packages.createdAt));
     if (limit) {
       query.limit(limit);
     }

@@ -158,6 +158,50 @@ function Router() {
         </ProtectedRoute>
       </Route>
 
+      <Route path="/scanner">
+        <ProtectedRoute>
+          <RoleGuard roles={["kurir"]} fallback={<NotFound />}>
+            <div className="p-6">
+              <h1 className="text-2xl font-bold mb-4">Barcode Scanner</h1>
+              <p>Barcode scanning functionality will be implemented here.</p>
+            </div>
+          </RoleGuard>
+        </ProtectedRoute>
+      </Route>
+
+      <Route path="/geofencing">
+        <ProtectedRoute>
+          <RoleGuard roles={["superadmin", "admin"]} fallback={<NotFound />}>
+            <div className="p-6">
+              <h1 className="text-2xl font-bold mb-4">Geofencing Setup</h1>
+              <p>Geofencing management functionality will be implemented here.</p>
+            </div>
+          </RoleGuard>
+        </ProtectedRoute>
+      </Route>
+
+      <Route path="/salary">
+        <ProtectedRoute>
+          <RoleGuard roles={["superadmin", "admin"]} fallback={<NotFound />}>
+            <div className="p-6">
+              <h1 className="text-2xl font-bold mb-4">Salary Management</h1>
+              <p>Salary management functionality will be implemented here.</p>
+            </div>
+          </RoleGuard>
+        </ProtectedRoute>
+      </Route>
+
+      <Route path="/reports">
+        <ProtectedRoute>
+          <RoleGuard roles={["superadmin", "admin", "pic"]} fallback={<NotFound />}>
+            <div className="p-6">
+              <h1 className="text-2xl font-bold mb-4">Reports</h1>
+              <p>Reporting functionality will be implemented here.</p>
+            </div>
+          </RoleGuard>
+        </ProtectedRoute>
+      </Route>
+
       {/* Root redirect */}
       <Route path="/">
         <ProtectedRoute>
