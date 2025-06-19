@@ -19,6 +19,13 @@ interface PackageData {
   recipientAddress: string;
   priority: string;
   assignedKurirId?: number;
+  notes?: string;
+  weight?: number;
+  dimensions?: string;
+  value?: number;
+  senderName?: string;
+  senderPhone?: string;
+  pickupAddress?: string;
 }
 
 export default function PengirimanManagement() {
@@ -28,6 +35,13 @@ export default function PengirimanManagement() {
     recipientPhone: "",
     recipientAddress: "",
     priority: "normal",
+    notes: "",
+    weight: 0,
+    dimensions: "",
+    value: 0,
+    senderName: "",
+    senderPhone: "",
+    pickupAddress: "",
   });
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -213,37 +227,126 @@ export default function PengirimanManagement() {
                 </div>
               </div>
 
+              {/* Sender Information */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium text-gray-900">Sender Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="senderName">Sender Name</Label>
+                    <Input
+                      id="senderName"
+                      value={formData.senderName}
+                      onChange={(e) => setFormData({ ...formData, senderName: e.target.value })}
+                      placeholder="Name of the sender"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="senderPhone">Sender Phone</Label>
+                    <Input
+                      id="senderPhone"
+                      type="tel"
+                      value={formData.senderPhone}
+                      onChange={(e) => setFormData({ ...formData, senderPhone: e.target.value })}
+                      placeholder="Sender phone number"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="pickupAddress">Pickup Address</Label>
+                  <Textarea
+                    id="pickupAddress"
+                    rows={2}
+                    value={formData.pickupAddress}
+                    onChange={(e) => setFormData({ ...formData, pickupAddress: e.target.value })}
+                    placeholder="Address where package will be picked up"
+                  />
+                </div>
+              </div>
+
+              {/* Recipient Information */}
               <div className="space-y-4">
                 <h3 className="text-lg font-medium text-gray-900">Recipient Information</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="recipientName">Full Name</Label>
+                    <Label htmlFor="recipientName">Full Name *</Label>
                     <Input
                       id="recipientName"
                       value={formData.recipientName}
                       onChange={(e) => setFormData({ ...formData, recipientName: e.target.value })}
                       required
+                      placeholder="Recipient full name"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="recipientPhone">Phone Number</Label>
+                    <Label htmlFor="recipientPhone">Phone Number *</Label>
                     <Input
                       id="recipientPhone"
                       type="tel"
                       value={formData.recipientPhone}
                       onChange={(e) => setFormData({ ...formData, recipientPhone: e.target.value })}
                       required
+                      placeholder="Recipient phone number"
                     />
                   </div>
                 </div>
                 <div>
-                  <Label htmlFor="recipientAddress">Delivery Address</Label>
+                  <Label htmlFor="recipientAddress">Delivery Address *</Label>
                   <Textarea
                     id="recipientAddress"
                     rows={3}
                     value={formData.recipientAddress}
                     onChange={(e) => setFormData({ ...formData, recipientAddress: e.target.value })}
                     required
+                    placeholder="Complete delivery address with landmarks"
+                  />
+                </div>
+              </div>
+
+              {/* Package Details */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium text-gray-900">Package Details</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="weight">Weight (kg)</Label>
+                    <Input
+                      id="weight"
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      value={formData.weight}
+                      onChange={(e) => setFormData({ ...formData, weight: parseFloat(e.target.value) || 0 })}
+                      placeholder="0.0"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="dimensions">Dimensions (cm)</Label>
+                    <Input
+                      id="dimensions"
+                      value={formData.dimensions}
+                      onChange={(e) => setFormData({ ...formData, dimensions: e.target.value })}
+                      placeholder="L x W x H"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="value">Declared Value (IDR)</Label>
+                    <Input
+                      id="value"
+                      type="number"
+                      min="0"
+                      value={formData.value}
+                      onChange={(e) => setFormData({ ...formData, value: parseInt(e.target.value) || 0 })}
+                      placeholder="0"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="notes">Special Instructions</Label>
+                  <Textarea
+                    id="notes"
+                    rows={2}
+                    value={formData.notes}
+                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                    placeholder="Any special handling instructions or notes"
                   />
                 </div>
               </div>

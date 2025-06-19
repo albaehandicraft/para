@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, decimal, uuid, json, varchar } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, decimal, uuid, json, varchar, real } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -57,6 +57,12 @@ export const packages = pgTable("packages", {
   deliveredAt: timestamp("delivered_at"),
   deliveryProof: text("delivery_proof"), // image URL or base64
   notes: text("notes"),
+  weight: real("weight").default(0),
+  dimensions: text("dimensions"),
+  value: integer("value").default(0),
+  senderName: text("sender_name"),
+  senderPhone: text("sender_phone"),
+  pickupAddress: text("pickup_address"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
