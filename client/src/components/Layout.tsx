@@ -93,7 +93,10 @@ export const Layout = ({ children }: LayoutProps) => {
     return <>{children}</>;
   }
 
-  const getInitials = (name: string) => {
+  const getInitials = (name: string | undefined) => {
+    if (!name || typeof name !== 'string') {
+      return 'U'; // Default fallback for undefined/invalid names
+    }
     return name
       .split(" ")
       .map((n) => n[0])
@@ -154,10 +157,10 @@ export const Layout = ({ children }: LayoutProps) => {
                     </Avatar>
                     <div className="hidden md:block text-left">
                       <p className="text-sm font-medium text-gray-900">
-                        {user.fullName}
+                        {user.fullName || 'User'}
                       </p>
                       <p className="text-xs text-gray-500 capitalize">
-                        {user.role}
+                        {user.role || 'user'}
                       </p>
                     </div>
                     <ChevronDown className="w-4 h-4 text-gray-400" />
@@ -191,15 +194,15 @@ export const Layout = ({ children }: LayoutProps) => {
             {visibleNavigation.map((item) => {
               const isActive = location === item.href;
               return (
-                <Link key={item.name} href={item.href}>
-                  <a
-                    className={`nav-link ${
-                      isActive ? "nav-link-active" : "nav-link-inactive"
-                    }`}
-                  >
-                    <item.icon className="w-4 h-4 mr-3" />
-                    {item.name}
-                  </a>
+                <Link 
+                  key={item.name} 
+                  href={item.href}
+                  className={`nav-link ${
+                    isActive ? "nav-link-active" : "nav-link-inactive"
+                  }`}
+                >
+                  <item.icon className="w-4 h-4 mr-3" />
+                  {item.name}
                 </Link>
               );
             })}
