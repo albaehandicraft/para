@@ -14,6 +14,7 @@ import PengirimanManagement from "@/pages/PengirimanManagement";
 import UserManagement from "@/pages/UserManagement";
 import AttendanceTracking from "@/pages/AttendanceTracking";
 import KurirDashboard from "@/pages/KurirDashboard";
+import KurirAttendance from "@/pages/KurirAttendance";
 import PICDashboard from "@/pages/PICDashboard";
 import GeofencingSetup from "@/pages/GeofencingSetup";
 import NotFound from "@/pages/not-found";
@@ -155,6 +156,14 @@ function Router() {
         <ProtectedRoute>
           <RoleGuard roles={["superadmin", "admin", "pic"]} fallback={<NotFound />}>
             <AttendanceTracking />
+          </RoleGuard>
+        </ProtectedRoute>
+      </Route>
+
+      <Route path="/my-attendance">
+        <ProtectedRoute>
+          <RoleGuard roles={["kurir"]} fallback={<NotFound />}>
+            <KurirAttendance />
           </RoleGuard>
         </ProtectedRoute>
       </Route>

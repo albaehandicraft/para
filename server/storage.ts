@@ -164,9 +164,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPackages(limit?: number): Promise<Package[]> {
-    const query = db.select().from(packages).orderBy(desc(packages.createdAt));
+    let query = db.select().from(packages).orderBy(desc(packages.createdAt));
     if (limit) {
-      query.limit(limit);
+      query = query.limit(limit);
     }
     return await query;
   }
