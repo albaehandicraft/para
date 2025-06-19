@@ -60,7 +60,7 @@ export default function GeofencingSetup() {
   // Create geofence zone mutation
   const createZoneMutation = useMutation({
     mutationFn: async (data: GeofenceFormData) => {
-      return apiRequest("/api/geofence", "POST", data);
+      return apiRequest("POST", "/api/geofence", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/geofence"] });
@@ -83,7 +83,7 @@ export default function GeofencingSetup() {
   // Update geofence zone mutation
   const updateZoneMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: Partial<GeofenceFormData> }) => {
-      return apiRequest(`/api/geofence/${id}`, "PUT", data);
+      return apiRequest("PUT", `/api/geofence/${id}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/geofence"] });
@@ -107,7 +107,7 @@ export default function GeofencingSetup() {
   // Delete geofence zone mutation
   const deleteZoneMutation = useMutation({
     mutationFn: async (id: number) => {
-      return apiRequest(`/api/geofence/${id}`, "DELETE");
+      return apiRequest("DELETE", `/api/geofence/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/geofence"] });
