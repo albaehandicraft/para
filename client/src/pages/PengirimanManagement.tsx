@@ -46,11 +46,11 @@ export default function PengirimanManagement() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: packages, isLoading: packagesLoading } = useQuery({
+  const { data: packages = [], isLoading: packagesLoading } = useQuery<any[]>({
     queryKey: ["/api/packages"],
   });
 
-  const { data: kurirs } = useQuery({
+  const { data: kurirs = [] } = useQuery({
     queryKey: ["/api/users", { role: "kurir" }],
     queryFn: async () => {
       const response = await fetch("/api/users?role=kurir", {
@@ -388,7 +388,7 @@ export default function PengirimanManagement() {
                 </tr>
               </thead>
               <tbody>
-                {packages?.map((pkg: any) => (
+                {packages.map((pkg: any) => (
                   <tr key={pkg.id} className="border-b border-gray-100 hover:bg-gray-50">
                     <td className="py-3 px-4 text-sm font-medium text-gray-900">
                       {pkg.packageId}

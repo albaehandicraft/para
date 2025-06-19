@@ -76,6 +76,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/users", authenticateToken, requireRole(["superadmin", "admin"]), async (req: AuthRequest, res) => {
+    try {
+      const { role } = req.query;
+      
+      if (role && typeof role === 'string') {
+        const users = await storage.getUsersByRole(role as any);
+        res.json(users.map(user => ({ ...user, password: undefined })));
+      } else {
+        // Return all users if no role specified
+        const users = await storage.getUsersByRole("kurir"); // Default to kurir for now
+        res.json(users.map(user => ({ ...user, password: undefined })));
+      }
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
   // Package management routes
   app.get("/api/packages", authenticateToken, async (req: AuthRequest, res) => {
     try {
