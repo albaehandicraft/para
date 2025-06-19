@@ -57,7 +57,7 @@ export const packages = pgTable("packages", {
   deliveredAt: timestamp("delivered_at"),
   deliveryProof: text("delivery_proof"), // image URL or base64
   notes: text("notes"),
-  weight: decimal("weight").default("0"),
+  weight: decimal("weight", { precision: 10, scale: 2 }),
   dimensions: text("dimensions"),
   value: integer("value").default(0),
   senderName: text("sender_name"),
