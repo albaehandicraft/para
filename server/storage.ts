@@ -67,15 +67,22 @@ export class DatabaseStorage implements IStorage {
     const hashedPassword = await bcrypt.hash(insertUser.password, 10);
     const [user] = await db
       .insert(users)
-      .values({ ...insertUser, password: hashedPassword })
+      .values({ 
+        ...insertUser, 
+        password: hashedPassword,
+        role: insertUser.role as UserRole
+      })
       .returning();
     return user;
   }
 
   async updateUser(id: number, updates: Partial<InsertUser>): Promise<User | undefined> {
-    const updateData = { ...updates };
+    const updateData: any = { ...updates };
     if (updateData.password) {
       updateData.password = await bcrypt.hash(updateData.password, 10);
+    }
+    if (updateData.role) {
+      updateData.role = updateData.role as UserRole;
     }
     
     const [user] = await db
@@ -99,9 +106,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createPackage(packageData: InsertPackage): Promise<Package> {
+    const packageId = `PKG-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+    const barcode = `${packageId}-${Date.now()}`;
+    
     const [pkg] = await db
       .insert(packages)
-      .values(packageData)
+      .values({
+        ...packageData,
+        packageId,
+        barcode,
+        status: (packageData.status || "created") as PackageStatus,
+        priority: packageData.priority || "normal",
+      })
       .returning();
     return pkg;
   }

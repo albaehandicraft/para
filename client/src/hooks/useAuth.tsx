@@ -1,4 +1,4 @@
-import { useState, createContext, useContext, useEffect, ReactNode } from "react";
+import React, { useState, createContext, useContext, useEffect, ReactNode } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { type UserRole } from "@shared/schema";
@@ -23,13 +23,13 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [token, setToken] = useState<string | null>(
     localStorage.getItem("auth_token")
   );
   const queryClient = useQueryClient();
 
-  const { data: user, isLoading } = useQuery({
+  const { data: user, isLoading } = useQuery<User>({
     queryKey: ["/api/auth/me"],
     enabled: !!token,
     retry: false,
