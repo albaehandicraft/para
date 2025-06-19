@@ -268,6 +268,13 @@ export class DatabaseStorage implements IStorage {
     return zone || undefined;
   }
 
+  async deleteGeofenceZone(id: number): Promise<boolean> {
+    const result = await db
+      .delete(geofenceZones)
+      .where(eq(geofenceZones.id, id));
+    return (result.rowCount || 0) > 0;
+  }
+
   async logBarcodeScan(packageId: number, scannedBy: number, scanType: string, location?: { lat: number; lng: number }): Promise<void> {
     await db.insert(barcodeScanLogs).values({
       packageId,

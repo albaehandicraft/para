@@ -53,18 +53,14 @@ export default function GeofencingSetup() {
   });
 
   // Fetch geofence zones
-  const { data: zones = [], isLoading } = useQuery({
+  const { data: zones = [], isLoading } = useQuery<GeofenceZone[]>({
     queryKey: ["/api/geofence"],
   });
 
   // Create geofence zone mutation
   const createZoneMutation = useMutation({
     mutationFn: async (data: GeofenceFormData) => {
-      return apiRequest({
-        url: "/api/geofence",
-        method: "POST",
-        body: data,
-      });
+      return apiRequest("/api/geofence", "POST", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/geofence"] });
@@ -87,11 +83,7 @@ export default function GeofencingSetup() {
   // Update geofence zone mutation
   const updateZoneMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: Partial<GeofenceFormData> }) => {
-      return apiRequest({
-        url: `/api/geofence/${id}`,
-        method: "PUT",
-        body: data,
-      });
+      return apiRequest(`/api/geofence/${id}`, "PUT", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/geofence"] });
@@ -115,10 +107,7 @@ export default function GeofencingSetup() {
   // Delete geofence zone mutation
   const deleteZoneMutation = useMutation({
     mutationFn: async (id: number) => {
-      return apiRequest({
-        url: `/api/geofence/${id}`,
-        method: "DELETE",
-      });
+      return apiRequest(`/api/geofence/${id}`, "DELETE");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/geofence"] });
