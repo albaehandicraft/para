@@ -238,6 +238,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Kurir attendance endpoints
+  app.get("/api/attendance/today", authenticateToken, requireRole(["kurir"]), async (req: AuthRequest, res) => {
+    try {
+      const today = new Date();
+      const attendance = await storage.getAttendanceByDate(req.user!.id, today);
+      res.json(attendance || null);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch today's attendance" });
+    }
+  });
+
+  app.get("/api/attendance/history", authenticateToken, requireRole(["kurir"]), async (req: AuthRequest, res) => {
+    try {
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const today = new Date();
+      
+      const attendance = await storage.getKurirAttendanceHistory(req.user!.id, thirtyDaysAgo, today);
+      res.json(attendance);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch attendance history" });
+    }
+  });
+
   app.get("/api/attendance", authenticateToken, requireRole(["admin", "superadmin", "pic"]), async (req, res) => {
     try {
       const { startDate, endDate } = req.query;

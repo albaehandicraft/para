@@ -34,6 +34,7 @@ export interface IStorage {
   getAttendanceByDate(kurirId: number, date: Date): Promise<Attendance | undefined>;
   updateAttendanceStatus(id: number, status: string, approvedBy: number): Promise<Attendance | undefined>;
   getAttendanceByDateRange(startDate: Date, endDate: Date): Promise<Attendance[]>;
+  getKurirAttendanceHistory(kurirId: number, startDate: Date, endDate: Date): Promise<Attendance[]>;
   
   // Geofencing
   createGeofenceZone(zoneData: InsertGeofenceZone): Promise<GeofenceZone>;
@@ -164,9 +165,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPackages(limit?: number): Promise<Package[]> {
-    let query = db.select().from(packages).orderBy(desc(packages.createdAt));
+    const query = db.select().from(packages).orderBy(desc(packages.createdAt));
     if (limit) {
-      query = query.limit(limit);
+      return await query.limit(limit);
     }
     return await query;
   }
@@ -198,7 +199,19 @@ export class DatabaseStorage implements IStorage {
   async createAttendance(attendanceData: InsertAttendance): Promise<Attendance> {
     const [att] = await db
       .insert(attendance)
-      .values(attendanceData)
+      .values({
+        date: attendanceData.date,
+        kurirId: attendanceData.kurirId,
+        checkInTime: attendanceData.checkInTime || null,
+        checkOutTime: attendanceData.checkOutTime || null,
+        checkInLat: attendanceData.checkInLat || null,
+        checkInLng: attendanceData.checkInLng || null,
+        checkOutLat: attendanceData.checkOutLat || null,
+        checkOutLng: attendanceData.checkOutLng || null,
+        status: attendanceData.status || "pending",
+        approvedBy: attendanceData.approvedBy || null,
+        notes: attendanceData.notes || null,
+      })
       .returning();
     return att;
   }
@@ -237,6 +250,20 @@ export class DatabaseStorage implements IStorage {
       .from(attendance)
       .where(
         and(
+          gte(attendance.date, startDate),
+          lte(attendance.date, endDate)
+        )
+      )
+      .orderBy(desc(attendance.date));
+  }
+
+  async getKurirAttendanceHistory(kurirId: number, startDate: Date, endDate: Date): Promise<Attendance[]> {
+    return await db
+      .select()
+      .from(attendance)
+      .where(
+        and(
+          eq(attendance.kurirId, kurirId),
           gte(attendance.date, startDate),
           lte(attendance.date, endDate)
         )

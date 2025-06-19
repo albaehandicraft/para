@@ -59,6 +59,12 @@ const navigation = [
     roles: ["superadmin", "admin", "pic"],
   },
   {
+    name: "My Attendance",
+    href: "/my-attendance",
+    icon: Clock,
+    roles: ["kurir"],
+  },
+  {
     name: "Barcode Scanner",
     href: "/scanner",
     icon: QrCode,
