@@ -155,15 +155,15 @@ export default function PengirimanManagement() {
     e.preventDefault();
     
     // Validate required fields
-    if (!formData.senderName.trim()) {
+    if (!formData.senderName?.trim()) {
       toast({ title: "Error", description: "Sender name is required", variant: "destructive" });
       return;
     }
-    if (!formData.senderPhone.trim()) {
+    if (!formData.senderPhone?.trim()) {
       toast({ title: "Error", description: "Sender phone is required", variant: "destructive" });
       return;
     }
-    if (!formData.pickupAddress.trim()) {
+    if (!formData.pickupAddress?.trim()) {
       toast({ title: "Error", description: "Pickup address is required", variant: "destructive" });
       return;
     }

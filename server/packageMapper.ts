@@ -10,6 +10,7 @@ export function mapRowToPackage(row: any) {
     priority: row.priority,
     status: row.status,
     assignedKurirId: row.assigned_kurir_id,
+    assignedKurir: row.assigned_kurir_name || null,
     createdBy: row.created_by,
     approvedBy: row.approved_by,
     deliveredAt: row.delivered_at,

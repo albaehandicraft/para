@@ -257,11 +257,14 @@ export class DatabaseStorage implements IStorage {
         
         const limitClause = limit ? `LIMIT ${limit}` : 'LIMIT 50';
         const query = `
-          SELECT id, package_id, barcode, recipient_name, recipient_phone, recipient_address, 
-                 priority, status, assigned_kurir_id, created_by, approved_by, delivered_at, 
-                 delivery_proof, notes, created_at, updated_at
-          FROM packages 
-          ORDER BY created_at DESC 
+          SELECT p.id, p.package_id, p.barcode, p.recipient_name, p.recipient_phone, p.recipient_address, 
+                 p.priority, p.status, p.assigned_kurir_id, p.created_by, p.approved_by, p.delivered_at, 
+                 p.delivery_proof, p.notes, p.created_at, p.updated_at,
+                 p.weight, p.dimensions, p.value, p.sender_name, p.sender_phone, p.pickup_address,
+                 u.full_name as assigned_kurir_name
+          FROM packages p
+          LEFT JOIN users u ON p.assigned_kurir_id = u.id
+          ORDER BY p.created_at DESC 
           ${limitClause}
         `;
         
