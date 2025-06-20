@@ -5,7 +5,7 @@ import {
   type Attendance, type InsertAttendance, type GeofenceZone, type InsertGeofenceZone,
   type UserRole, type PackageStatus, type AttendanceStatus
 } from "@shared/schema";
-import { db, pool, pgPool } from "./db";
+import { db, pool, pgPool, packagesPool } from "./db";
 import { eq, and, desc, sql, gte, lte, count } from "drizzle-orm";
 import bcrypt from "bcrypt";
 
@@ -194,26 +194,20 @@ export class DatabaseStorage implements IStorage {
 
   async getPackages(limit?: number): Promise<Package[]> {
     try {
-      const client = await pgPool.connect();
+      // Use direct pool query without connection management
+      const limitClause = limit ? `LIMIT ${limit}` : '';
       
-      try {
-        const limitClause = limit ? `LIMIT ${limit}` : '';
-        
-        // Use direct PostgreSQL client with resi column included
-        const query = `
-          SELECT id, package_id, resi, barcode, recipient_name, recipient_phone, recipient_address, 
-                 priority, status, assigned_kurir_id, created_by, approved_by, delivered_at, 
-                 delivery_proof, notes, created_at, updated_at
-          FROM packages 
-          ORDER BY created_at DESC 
-          ${limitClause}
-        `;
-        
-        const result = await client.query(query);
-        return result.rows as Package[];
-      } finally {
-        client.release();
-      }
+      const query = `
+        SELECT id, package_id, barcode, recipient_name, recipient_phone, recipient_address, 
+               priority, status, assigned_kurir_id, created_by, approved_by, delivered_at, 
+               delivery_proof, notes, created_at, updated_at, resi
+        FROM packages 
+        ORDER BY created_at DESC 
+        ${limitClause}
+      `;
+      
+      const result = await packagesPool.query(query);
+      return result.rows as Package[];
     } catch (error) {
       console.error("Error fetching packages:", error);
       throw error;
