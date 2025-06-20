@@ -1,5 +1,4 @@
-// @ts-ignore
-import htmlPdf from 'html-pdf-node';
+import { jsPDF } from 'jspdf';
 import { format } from 'date-fns';
 
 interface ReportData {
@@ -399,30 +398,192 @@ export class PDFGenerator {
   }
 
   static async generatePDF(data: ReportData, startDate: string, endDate: string): Promise<Buffer> {
-    const html = this.generateReportHTML(data, startDate, endDate);
-    
-    const options = {
-      format: 'A4',
-      margin: {
-        top: '20mm',
-        bottom: '20mm',
-        left: '15mm',
-        right: '15mm'
-      },
-      printBackground: true,
-      displayHeaderFooter: true,
-      headerTemplate: '<div></div>',
-      footerTemplate: `
-        <div style="font-size: 10px; width: 100%; text-align: center; color: #666; margin-top: 10px;">
-          Page <span class="pageNumber"></span> of <span class="totalPages"></span>
-        </div>
-      `
-    };
-
     try {
-      const file = { content: html };
-      const pdfBuffer = await htmlPdf.generatePdf(file, options);
-      return pdfBuffer;
+      const doc = new jsPDF();
+      const currentDate = format(new Date(), 'dd/MM/yyyy HH:mm');
+      
+      // Set font and colors
+      doc.setFont('helvetica');
+      
+      // Header
+      doc.setFontSize(20);
+      doc.setTextColor(31, 41, 55); // gray-800
+      doc.text('Delivery Management Report', 20, 30);
+      
+      doc.setFontSize(12);
+      doc.setTextColor(107, 114, 128); // gray-500
+      doc.text(`Report Period: ${startDate} to ${endDate}`, 20, 40);
+      doc.text(`Generated on: ${currentDate}`, 20, 50);
+      
+      // Summary Section
+      let yPos = 70;
+      doc.setFontSize(16);
+      doc.setTextColor(31, 41, 55);
+      doc.text('Executive Summary', 20, yPos);
+      yPos += 15;
+      
+      doc.setFontSize(10);
+      doc.setTextColor(55, 65, 81);
+      
+      const summaryData = [
+        [`Total Packages: ${data.summary.totalPackages}`, `Success Rate: ${data.summary.successRate}%`],
+        [`Delivered: ${data.summary.totalDelivered}`, `Active Kurir: ${data.summary.totalKurir}`],
+        [`Active Deliveries: ${data.summary.activeDeliveries}`, `Avg Delivery Time: ${data.summary.averageDeliveryTime}h`],
+        [`Total Revenue: Rp ${data.summary.totalRevenue.toLocaleString()}`, `Total Users: ${data.summary.totalUsers}`]
+      ];
+      
+      summaryData.forEach(row => {
+        doc.text(row[0], 20, yPos);
+        doc.text(row[1], 110, yPos);
+        yPos += 12;
+      });
+      
+      // Package Status Section
+      yPos += 15;
+      doc.setFontSize(14);
+      doc.setTextColor(31, 41, 55);
+      doc.text('Package Status Distribution', 20, yPos);
+      yPos += 10;
+      
+      doc.setFontSize(9);
+      doc.setTextColor(55, 65, 81);
+      doc.text('Status', 20, yPos);
+      doc.text('Count', 80, yPos);
+      doc.text('Percentage', 130, yPos);
+      yPos += 8;
+      
+      // Draw line under headers
+      doc.line(20, yPos - 2, 180, yPos - 2);
+      
+      data.packagesByStatus.forEach(item => {
+        if (yPos > 250) {
+          doc.addPage();
+          yPos = 30;
+        }
+        doc.text(item.name, 20, yPos);
+        doc.text(item.value.toString(), 80, yPos);
+        doc.text(`${((item.value / Math.max(data.summary.totalPackages, 1)) * 100).toFixed(1)}%`, 130, yPos);
+        yPos += 10;
+      });
+      
+      // Package Priority Section
+      yPos += 15;
+      if (yPos > 240) {
+        doc.addPage();
+        yPos = 30;
+      }
+      
+      doc.setFontSize(14);
+      doc.setTextColor(31, 41, 55);
+      doc.text('Package Priority Distribution', 20, yPos);
+      yPos += 10;
+      
+      doc.setFontSize(9);
+      doc.setTextColor(55, 65, 81);
+      doc.text('Priority', 20, yPos);
+      doc.text('Count', 80, yPos);
+      doc.text('Percentage', 130, yPos);
+      yPos += 8;
+      
+      doc.line(20, yPos - 2, 180, yPos - 2);
+      
+      data.packagesByPriority.forEach(item => {
+        if (yPos > 250) {
+          doc.addPage();
+          yPos = 30;
+        }
+        doc.text(item.name, 20, yPos);
+        doc.text(item.value.toString(), 80, yPos);
+        doc.text(`${((item.value / Math.max(data.summary.totalPackages, 1)) * 100).toFixed(1)}%`, 130, yPos);
+        yPos += 10;
+      });
+      
+      // Kurir Performance Section
+      if (data.kurirPerformance.length > 0) {
+        yPos += 15;
+        if (yPos > 220) {
+          doc.addPage();
+          yPos = 30;
+        }
+        
+        doc.setFontSize(14);
+        doc.setTextColor(31, 41, 55);
+        doc.text('Kurir Performance Summary', 20, yPos);
+        yPos += 10;
+        
+        doc.setFontSize(8);
+        doc.setTextColor(55, 65, 81);
+        doc.text('Name', 20, yPos);
+        doc.text('Delivered', 60, yPos);
+        doc.text('Attendance', 90, yPos);
+        doc.text('Avg Time', 125, yPos);
+        doc.text('Status', 155, yPos);
+        yPos += 8;
+        
+        doc.line(20, yPos - 2, 180, yPos - 2);
+        
+        data.kurirPerformance.slice(0, 15).forEach(kurir => {
+          if (yPos > 250) {
+            doc.addPage();
+            yPos = 30;
+          }
+          doc.text(kurir.name.substring(0, 20), 20, yPos);
+          doc.text(kurir.packagesDelivered.toString(), 60, yPos);
+          doc.text(`${kurir.attendanceRate}%`, 90, yPos);
+          doc.text(`${kurir.averageDeliveryTime}h`, 125, yPos);
+          doc.text(kurir.status, 155, yPos);
+          yPos += 10;
+        });
+      }
+      
+      // Revenue Analysis
+      if (data.revenue.length > 0) {
+        yPos += 15;
+        if (yPos > 220) {
+          doc.addPage();
+          yPos = 30;
+        }
+        
+        doc.setFontSize(14);
+        doc.setTextColor(31, 41, 55);
+        doc.text('Revenue Analysis (Last 10 Days)', 20, yPos);
+        yPos += 10;
+        
+        doc.setFontSize(8);
+        doc.setTextColor(55, 65, 81);
+        doc.text('Date', 20, yPos);
+        doc.text('Revenue (Rp)', 60, yPos);
+        doc.text('Packages', 110, yPos);
+        doc.text('Avg per Package', 140, yPos);
+        yPos += 8;
+        
+        doc.line(20, yPos - 2, 180, yPos - 2);
+        
+        data.revenue.slice(0, 10).forEach(rev => {
+          if (yPos > 250) {
+            doc.addPage();
+            yPos = 30;
+          }
+          doc.text(rev.date, 20, yPos);
+          doc.text(rev.amount.toLocaleString(), 60, yPos);
+          doc.text(rev.packages.toString(), 110, yPos);
+          doc.text(rev.packages > 0 ? Math.round(rev.amount / rev.packages).toLocaleString() : '0', 140, yPos);
+          yPos += 10;
+        });
+      }
+      
+      // Footer
+      const pageCount = doc.internal.pages.length - 1;
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(156, 163, 175);
+        doc.text('Pengiriman System - Delivery Management Platform', 20, 285);
+        doc.text(`Page ${i} of ${pageCount}`, 150, 285);
+        doc.text('This report contains confidential business information', 20, 292);
+      }
+      
+      return Buffer.from(doc.output('arraybuffer'));
     } catch (error) {
       console.error('PDF generation error:', error);
       throw new Error('Failed to generate PDF report');
