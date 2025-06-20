@@ -41,7 +41,7 @@ export default function PengirimanManagement() {
     recipientAddress: "",
     priority: "normal",
     notes: "",
-    weight: 0,
+    weight: 1,
     dimensions: "",
     value: 0,
     senderName: "",
@@ -82,7 +82,7 @@ export default function PengirimanManagement() {
         recipientAddress: "",
         priority: "normal",
         notes: "",
-        weight: 0,
+        weight: 1,
         dimensions: "",
         value: 0,
         senderName: "",
@@ -153,6 +153,45 @@ export default function PengirimanManagement() {
 
   const handleCreatePackage = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate required fields
+    if (!formData.senderName.trim()) {
+      toast({ title: "Error", description: "Sender name is required", variant: "destructive" });
+      return;
+    }
+    if (!formData.senderPhone.trim()) {
+      toast({ title: "Error", description: "Sender phone is required", variant: "destructive" });
+      return;
+    }
+    if (!formData.pickupAddress.trim()) {
+      toast({ title: "Error", description: "Pickup address is required", variant: "destructive" });
+      return;
+    }
+    if (!formData.recipientName.trim()) {
+      toast({ title: "Error", description: "Recipient name is required", variant: "destructive" });
+      return;
+    }
+    if (!formData.recipientPhone.trim()) {
+      toast({ title: "Error", description: "Recipient phone is required", variant: "destructive" });
+      return;
+    }
+    if (!formData.recipientAddress.trim()) {
+      toast({ title: "Error", description: "Recipient address is required", variant: "destructive" });
+      return;
+    }
+    if (!formData.weight || formData.weight <= 0) {
+      toast({ title: "Error", description: "Package weight must be greater than 0", variant: "destructive" });
+      return;
+    }
+    if (!formData.dimensions.trim()) {
+      toast({ title: "Error", description: "Package dimensions are required", variant: "destructive" });
+      return;
+    }
+    if (!formData.value || formData.value <= 0) {
+      toast({ title: "Error", description: "Package value must be greater than 0", variant: "destructive" });
+      return;
+    }
+    
     createPackageMutation.mutate(formData);
   };
 
@@ -247,12 +286,51 @@ export default function PengirimanManagement() {
               Create New Pengiriman
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Create New Pengiriman</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleCreatePackage} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Sender Information */}
+                <div className="col-span-2">
+                  <h3 className="text-lg font-medium text-gray-900 mb-3 border-b pb-2">Sender Information</h3>
+                </div>
+                <div>
+                  <Label htmlFor="senderName">Sender Name</Label>
+                  <Input
+                    id="senderName"
+                    value={formData.senderName}
+                    onChange={(e) => setFormData({ ...formData, senderName: e.target.value })}
+                    placeholder="Full name of sender"
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="senderPhone">Sender Phone</Label>
+                  <Input
+                    id="senderPhone"
+                    value={formData.senderPhone}
+                    onChange={(e) => setFormData({ ...formData, senderPhone: e.target.value })}
+                    placeholder="Sender phone number"
+                    required
+                  />
+                </div>
+                <div className="col-span-2">
+                  <Label htmlFor="pickupAddress">Pickup Address</Label>
+                  <Textarea
+                    id="pickupAddress"
+                    value={formData.pickupAddress}
+                    onChange={(e) => setFormData({ ...formData, pickupAddress: e.target.value })}
+                    placeholder="Complete pickup address"
+                    required
+                  />
+                </div>
+
+                {/* Recipient Information */}
+                <div className="col-span-2">
+                  <h3 className="text-lg font-medium text-gray-900 mb-3 border-b pb-2 mt-6">Recipient Information</h3>
+                </div>
                 <div>
                   <Label htmlFor="recipientName">Recipient Name</Label>
                   <Input
@@ -269,7 +347,7 @@ export default function PengirimanManagement() {
                     id="recipientPhone"
                     value={formData.recipientPhone}
                     onChange={(e) => setFormData({ ...formData, recipientPhone: e.target.value })}
-                    placeholder="Phone number"
+                    placeholder="Recipient phone number"
                     required
                   />
                 </div>
@@ -280,6 +358,46 @@ export default function PengirimanManagement() {
                     value={formData.recipientAddress}
                     onChange={(e) => setFormData({ ...formData, recipientAddress: e.target.value })}
                     placeholder="Complete delivery address"
+                    required
+                  />
+                </div>
+
+                {/* Package Details */}
+                <div className="col-span-2">
+                  <h3 className="text-lg font-medium text-gray-900 mb-3 border-b pb-2 mt-6">Package Details</h3>
+                </div>
+                <div>
+                  <Label htmlFor="weight">Weight (kg)</Label>
+                  <Input
+                    id="weight"
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    value={formData.weight}
+                    onChange={(e) => setFormData({ ...formData, weight: parseFloat(e.target.value) || 0 })}
+                    placeholder="Package weight in kg"
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="dimensions">Dimensions (LxWxH cm)</Label>
+                  <Input
+                    id="dimensions"
+                    value={formData.dimensions}
+                    onChange={(e) => setFormData({ ...formData, dimensions: e.target.value })}
+                    placeholder="e.g., 30x20x15"
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="value">Declared Value (Rp)</Label>
+                  <Input
+                    id="value"
+                    type="number"
+                    min="0"
+                    value={formData.value}
+                    onChange={(e) => setFormData({ ...formData, value: parseInt(e.target.value) || 0 })}
+                    placeholder="Package value in Rupiah"
                     required
                   />
                 </div>
@@ -298,6 +416,11 @@ export default function PengirimanManagement() {
                       <SelectItem value="urgent">Urgent</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+
+                {/* Assignment and Notes */}
+                <div className="col-span-2">
+                  <h3 className="text-lg font-medium text-gray-900 mb-3 border-b pb-2 mt-6">Assignment & Notes</h3>
                 </div>
                 <div>
                   <Label htmlFor="kurir">Assign to Kurir (Optional)</Label>
@@ -321,6 +444,15 @@ export default function PengirimanManagement() {
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+                <div className="col-span-2">
+                  <Label htmlFor="notes">Special Instructions</Label>
+                  <Textarea
+                    id="notes"
+                    value={formData.notes}
+                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                    placeholder="Any special handling instructions or delivery notes"
+                  />
                 </div>
               </div>
 
