@@ -5,7 +5,7 @@ import {
   type Attendance, type InsertAttendance, type GeofenceZone, type InsertGeofenceZone,
   type UserRole, type PackageStatus, type AttendanceStatus
 } from "@shared/schema";
-import { db, pool } from "./db";
+import { db, pool, rawPool } from "./db";
 import { eq, and, desc, sql, gte, lte, count } from "drizzle-orm";
 import bcrypt from "bcrypt";
 
@@ -194,18 +194,26 @@ export class DatabaseStorage implements IStorage {
 
   async getPackages(limit?: number): Promise<Package[]> {
     try {
-      // Use pool query directly to bypass Drizzle schema cache
-      const limitClause = limit ? `LIMIT ${limit}` : '';
-      const { rows } = await pool.query(`
-        SELECT id, package_id, resi, barcode, recipient_name, recipient_phone, recipient_address, 
-               priority, status, assigned_kurir_id, created_by, approved_by, delivered_at, 
-               delivery_proof, notes, weight::numeric, dimensions, value, sender_name, sender_phone, 
-               pickup_address, created_at, updated_at 
-        FROM packages 
-        ORDER BY created_at DESC 
-        ${limitClause}
-      `);
-      return rows as Package[];
+      // Use separate raw pool to avoid Drizzle schema cache
+      const client = await rawPool.connect();
+      
+      try {
+        const limitClause = limit ? `LIMIT ${limit}` : '';
+        const query = `
+          SELECT id, package_id, resi, barcode, recipient_name, recipient_phone, recipient_address, 
+                 priority, status, assigned_kurir_id, created_by, approved_by, delivered_at, 
+                 delivery_proof, notes, weight, dimensions, value, sender_name, sender_phone, 
+                 pickup_address, created_at, updated_at 
+          FROM packages 
+          ORDER BY created_at DESC 
+          ${limitClause}
+        `;
+        
+        const result = await client.query(query);
+        return result.rows as Package[];
+      } finally {
+        client.release();
+      }
     } catch (error) {
       console.error("Error fetching packages:", error);
       throw error;
