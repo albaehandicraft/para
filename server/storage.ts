@@ -5,7 +5,7 @@ import {
   type Attendance, type InsertAttendance, type GeofenceZone, type InsertGeofenceZone,
   type UserRole, type PackageStatus, type AttendanceStatus
 } from "@shared/schema";
-import { db, pool, rawPool } from "./db";
+import { db, pool, pgPool } from "./db";
 import { eq, and, desc, sql, gte, lte, count } from "drizzle-orm";
 import bcrypt from "bcrypt";
 
@@ -194,12 +194,12 @@ export class DatabaseStorage implements IStorage {
 
   async getPackages(limit?: number): Promise<Package[]> {
     try {
-      const client = await rawPool.connect();
+      const client = await pgPool.connect();
       
       try {
         const limitClause = limit ? `LIMIT ${limit}` : '';
         
-        // Query with all columns that exist in the actual database
+        // Use direct PostgreSQL client to bypass Neon cache
         const query = `
           SELECT id, package_id, resi, barcode, recipient_name, recipient_phone, recipient_address, 
                  priority, status, assigned_kurir_id, created_by, approved_by, delivered_at, 
