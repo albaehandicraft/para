@@ -315,19 +315,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const reportsData = await storage.getReportsData(startDate, endDate);
       
-      if (format === "csv") {
-        // Generate CSV format
-        const csvData = [
-          "Package Status,Count",
-          ...reportsData.packagesByStatus.map(item => `${item.name},${item.value}`)
-        ].join('\n');
+      const { PDFGenerator } = await import("../services/pdfGenerator");
+      
+      if (format === "pdf") {
+        const pdfBuffer = await PDFGenerator.generatePDF(
+          reportsData, 
+          from as string || startDate.toISOString().split('T')[0],
+          to as string || endDate.toISOString().split('T')[0]
+        );
+        
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="delivery-report-${from || startDate.toISOString().split('T')[0]}-to-${to || endDate.toISOString().split('T')[0]}.pdf"`);
+        res.send(pdfBuffer);
+      } else if (format === "csv") {
+        const csvData = PDFGenerator.generateCSV(reportsData);
         
         res.setHeader('Content-Type', 'text/csv');
-        res.setHeader('Content-Disposition', `attachment; filename="delivery-report-${from}-to-${to}.csv"`);
+        res.setHeader('Content-Disposition', `attachment; filename="delivery-report-${from || startDate.toISOString().split('T')[0]}-to-${to || endDate.toISOString().split('T')[0]}.csv"`);
+        res.send(csvData);
+      } else if (format === "excel") {
+        // For Excel, use CSV format with Excel MIME type
+        const csvData = PDFGenerator.generateCSV(reportsData);
+        
+        res.setHeader('Content-Type', 'application/vnd.ms-excel');
+        res.setHeader('Content-Disposition', `attachment; filename="delivery-report-${from || startDate.toISOString().split('T')[0]}-to-${to || endDate.toISOString().split('T')[0]}.csv"`);
         res.send(csvData);
       } else {
-        // For other formats, return JSON for now
-        res.json(reportsData);
+        res.status(400).json({ message: "Unsupported export format" });
       }
     } catch (error) {
       console.error("Error exporting reports:", error);
