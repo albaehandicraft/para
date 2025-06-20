@@ -225,21 +225,23 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createAttendance(attendanceData: InsertAttendance): Promise<Attendance> {
+    const attendanceRecord = {
+      date: attendanceData.date,
+      kurirId: attendanceData.kurirId,
+      ...(attendanceData.checkInTime && { checkInTime: attendanceData.checkInTime }),
+      ...(attendanceData.checkOutTime && { checkOutTime: attendanceData.checkOutTime }),
+      ...(attendanceData.checkInLat && { checkInLat: attendanceData.checkInLat }),
+      ...(attendanceData.checkInLng && { checkInLng: attendanceData.checkInLng }),
+      ...(attendanceData.checkOutLat && { checkOutLat: attendanceData.checkOutLat }),
+      ...(attendanceData.checkOutLng && { checkOutLng: attendanceData.checkOutLng }),
+      status: (attendanceData.status || "pending") as any,
+      ...(attendanceData.approvedBy && { approvedBy: attendanceData.approvedBy }),
+      ...(attendanceData.notes && { notes: attendanceData.notes }),
+    };
+
     const [att] = await db
       .insert(attendance)
-      .values({
-        date: attendanceData.date,
-        kurirId: attendanceData.kurirId,
-        checkInTime: attendanceData.checkInTime || null,
-        checkOutTime: attendanceData.checkOutTime || null,
-        checkInLat: attendanceData.checkInLat || null,
-        checkInLng: attendanceData.checkInLng || null,
-        checkOutLat: attendanceData.checkOutLat || null,
-        checkOutLng: attendanceData.checkOutLng || null,
-        status: attendanceData.status || "pending",
-        approvedBy: attendanceData.approvedBy || null,
-        notes: attendanceData.notes || null,
-      })
+      .values(attendanceRecord)
       .returning();
     return att;
   }
@@ -484,9 +486,9 @@ export class DatabaseStorage implements IStorage {
     };
 
     const packagesByPriority = packagePriorityData.map(item => ({
-      name: item.priority.charAt(0).toUpperCase() + item.priority.slice(1),
+      name: item.priority ? item.priority.charAt(0).toUpperCase() + item.priority.slice(1) : 'Unknown',
       value: item.count,
-      color: priorityColors[item.priority] || '#6b7280'
+      color: priorityColors[item.priority || 'normal'] || '#6b7280'
     }));
 
     // Kurir performance data
