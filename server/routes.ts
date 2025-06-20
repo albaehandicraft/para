@@ -160,6 +160,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get packages assigned to current kurir
+  app.get("/api/packages/kurir", authenticateToken, requireRole(["kurir"]), async (req: AuthRequest, res) => {
+    try {
+      const packages = await storage.getPackagesByKurir(req.user!.id);
+      res.json(packages);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch packages" });
+    }
+  });
+
+  // Get available packages for pickup
+  app.get("/api/packages/available", authenticateToken, requireRole(["kurir"]), async (req: AuthRequest, res) => {
+    try {
+      const packages = await storage.getAvailablePackages();
+      res.json(packages);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch available packages" });
+    }
+  });
+
+  // Take an available package
+  app.post("/api/packages/:id/take", authenticateToken, requireRole(["kurir"]), async (req: AuthRequest, res) => {
+    try {
+      const packageId = parseInt(req.params.id);
+      
+      const package_ = await storage.getPackage(packageId);
+      if (!package_) {
+        return res.status(404).json({ message: "Package not found" });
+      }
+      
+      if (package_.status !== "created") {
+        return res.status(400).json({ message: "Package is not available for pickup" });
+      }
+      
+      if (package_.assignedKurirId) {
+        return res.status(400).json({ message: "Package has already been taken by another courier" });
+      }
+      
+      const updatedPackage = await storage.assignPackageToKurir(
+        packageId, 
+        req.user!.id, 
+        req.user!.id
+      );
+      
+      res.json({ message: "Package taken successfully", package: updatedPackage });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   // Barcode scanning routes
   app.post("/api/barcode/scan", authenticateToken, requireRole(["kurir"]), async (req: AuthRequest, res) => {
     try {

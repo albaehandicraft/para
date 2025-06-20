@@ -27,6 +27,7 @@ export interface IStorage {
   updatePackageStatus(id: number, status: PackageStatus, changedBy: number, notes?: string): Promise<Package | undefined>;
   getPackagesByKurir(kurirId: number): Promise<Package[]>;
   getPackages(limit?: number): Promise<Package[]>;
+  getAvailablePackages(): Promise<Package[]>;
   assignPackageToKurir(packageId: number, kurirId: number, assignedBy: number): Promise<Package | undefined>;
   
   // Attendance management
@@ -190,6 +191,51 @@ export class DatabaseStorage implements IStorage {
 
   async getPackagesByKurir(kurirId: number): Promise<Package[]> {
     return await db.select().from(packages).where(eq(packages.assignedKurirId, kurirId));
+  }
+
+  async getAvailablePackages(): Promise<Package[]> {
+    try {
+      const freshClient = await pgPool.connect();
+      try {
+        await freshClient.query('BEGIN');
+        const result = await freshClient.query(`
+          SELECT * FROM packages 
+          WHERE status = 'created' 
+          AND assigned_kurir_id IS NULL
+          ORDER BY created_at DESC
+        `);
+        await freshClient.query('COMMIT');
+        
+        const packageRows = result.rows.map(row => ({
+          id: row.id,
+          packageId: row.package_id,
+          barcode: row.barcode,
+          recipientName: row.recipient_name,
+          recipientPhone: row.recipient_phone,
+          recipientAddress: row.recipient_address,
+          priority: row.priority,
+          status: row.status,
+          assignedKurirId: row.assigned_kurir_id,
+          createdBy: row.created_by,
+          approvedBy: row.approved_by,
+          deliveredAt: row.delivered_at,
+          deliveryProof: row.delivery_proof,
+          notes: row.notes,
+          createdAt: row.created_at,
+          updatedAt: row.updated_at
+        }));
+        
+        return packageRows as Package[];
+      } catch (queryError) {
+        await freshClient.query('ROLLBACK');
+        throw queryError;
+      } finally {
+        freshClient.release();
+      }
+    } catch (error) {
+      console.error("Error fetching available packages:", error);
+      return [];
+    }
   }
 
   async getPackages(limit?: number): Promise<Package[]> {
