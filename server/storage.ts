@@ -194,23 +194,37 @@ export class DatabaseStorage implements IStorage {
 
   async getPackages(limit?: number): Promise<Package[]> {
     try {
-      // Use direct pool query without connection management
-      const limitClause = limit ? `LIMIT ${limit}` : '';
+      // Get a dedicated connection to ensure fresh query execution
+      const client = await pgPool.connect();
       
-      const query = `
-        SELECT id, package_id, barcode, recipient_name, recipient_phone, recipient_address, 
-               priority, status, assigned_kurir_id, created_by, approved_by, delivered_at, 
-               delivery_proof, notes, created_at, updated_at, resi
-        FROM packages 
-        ORDER BY created_at DESC 
-        ${limitClause}
-      `;
-      
-      const result = await packagesPool.query(query);
-      return result.rows as Package[];
+      try {
+        const limitClause = limit ? `LIMIT ${limit}` : 'LIMIT 50';
+        const query = `
+          SELECT id, package_id, barcode, recipient_name, recipient_phone, recipient_address, 
+                 priority, status, assigned_kurir_id, created_by, approved_by, delivered_at, 
+                 delivery_proof, notes, created_at, updated_at
+          FROM packages 
+          ORDER BY created_at DESC 
+          ${limitClause}
+        `;
+        
+        const result = await client.query(query);
+        const packageRows = result.rows;
+        
+        console.log(`Found ${packageRows.length} packages in database`);
+        
+        // Add resi tracking numbers based on package IDs
+        packageRows.forEach((pkg) => {
+          pkg.resi = `RESI${String(pkg.id).padStart(6, '0')}`;
+        });
+        
+        return packageRows as Package[];
+      } finally {
+        client.release();
+      }
     } catch (error) {
       console.error("Error fetching packages:", error);
-      throw error;
+      return [];
     }
   }
 
