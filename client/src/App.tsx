@@ -15,6 +15,7 @@ import UserManagement from "@/pages/UserManagement";
 import AttendanceTracking from "@/pages/AttendanceTracking";
 import KurirDashboard from "@/pages/KurirDashboard";
 import KurirAttendance from "@/pages/KurirAttendance";
+import KurirPackages from "@/pages/KurirPackages";
 import PICDashboard from "@/pages/PICDashboard";
 import GeofencingSetup from "@/pages/GeofencingSetup";
 import Reports from "@/pages/Reports";
@@ -169,13 +170,10 @@ function Router() {
         </ProtectedRoute>
       </Route>
 
-      <Route path="/scanner">
+      <Route path="/my-packages">
         <ProtectedRoute>
           <RoleGuard roles={["kurir"]} fallback={<NotFound />}>
-            <div className="p-6">
-              <h1 className="text-2xl font-bold mb-4">Barcode Scanner</h1>
-              <p>Barcode scanning functionality will be implemented here.</p>
-            </div>
+            <KurirPackages />
           </RoleGuard>
         </ProtectedRoute>
       </Route>

@@ -178,6 +178,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Manual package pickup
+  app.post("/api/packages/:id/pickup", authenticateToken, requireRole(["kurir"]), async (req: AuthRequest, res) => {
+    try {
+      const packageId = parseInt(req.params.id);
+      const { notes } = req.body;
+      
+      const package_ = await storage.getPackage(packageId);
+      if (!package_) {
+        return res.status(404).json({ message: "Package not found" });
+      }
+      
+      if (package_.status !== "assigned") {
+        return res.status(400).json({ message: "Package is not ready for pickup" });
+      }
+      
+      if (package_.assignedKurirId !== req.user!.id) {
+        return res.status(403).json({ message: "Package not assigned to you" });
+      }
+      
+      const updatedPackage = await storage.updatePackageStatus(
+        packageId, 
+        "picked_up", 
+        req.user!.id, 
+        notes || "Manual pickup"
+      );
+      
+      // Log the pickup action
+      await storage.logBarcodeScan(packageId, req.user!.id, "pickup");
+      
+      res.json({ message: "Package picked up successfully", package: updatedPackage });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Manual package delivery
+  app.post("/api/packages/:id/delivery", authenticateToken, requireRole(["kurir"]), async (req: AuthRequest, res) => {
+    try {
+      const packageId = parseInt(req.params.id);
+      const { notes } = req.body;
+      
+      if (!notes || !notes.trim()) {
+        return res.status(400).json({ message: "Delivery notes are required" });
+      }
+      
+      const package_ = await storage.getPackage(packageId);
+      if (!package_) {
+        return res.status(404).json({ message: "Package not found" });
+      }
+      
+      if (!["picked_up", "in_transit"].includes(package_.status)) {
+        return res.status(400).json({ message: "Package is not ready for delivery" });
+      }
+      
+      if (package_.assignedKurirId !== req.user!.id) {
+        return res.status(403).json({ message: "Package not assigned to you" });
+      }
+      
+      const updatedPackage = await storage.updatePackageStatus(
+        packageId, 
+        "delivered", 
+        req.user!.id, 
+        notes
+      );
+      
+      // Log the delivery action
+      await storage.logBarcodeScan(packageId, req.user!.id, "delivery");
+      
+      res.json({ message: "Package delivered successfully", package: updatedPackage });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   // Attendance routes
   app.post("/api/attendance/checkin", authenticateToken, requireRole(["kurir"]), async (req: AuthRequest, res) => {
     try {

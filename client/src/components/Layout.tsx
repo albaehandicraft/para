@@ -65,9 +65,9 @@ const navigation = [
     roles: ["kurir"],
   },
   {
-    name: "Barcode Scanner",
-    href: "/scanner",
-    icon: QrCode,
+    name: "My Packages",
+    href: "/my-packages",
+    icon: Package,
     roles: ["kurir"],
   },
   {
