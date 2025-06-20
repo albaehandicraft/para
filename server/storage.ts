@@ -5,7 +5,7 @@ import {
   type Attendance, type InsertAttendance, type GeofenceZone, type InsertGeofenceZone,
   type UserRole, type PackageStatus, type AttendanceStatus
 } from "@shared/schema";
-import { db, pool, pgPool, packagesPool } from "./db";
+import { db, pool, pgPool } from "./db";
 import { eq, and, desc, sql, gte, lte, count } from "drizzle-orm";
 import bcrypt from "bcrypt";
 
