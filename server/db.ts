@@ -7,7 +7,7 @@ import * as schema from "@shared/schema";
 
 neonConfig.webSocketConstructor = ws;
 
-const DATABASE_URL = process.env.DATABASE_URL || "postgresql://neondb_owner:npg_LYngtEQlsW57@ep-lucky-tooth-ad4gx0ke.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require";
+const DATABASE_URL = "postgresql://paradelivery_owner:npg_uV6KZbn4dCAy@ep-shy-flower-a123hzhg-pooler.ap-southeast-1.aws.neon.tech/paradelivery?sslmode=require";
 
 // Direct PostgreSQL connection with no caching
 export const directPgPool = new PgPool({
