@@ -193,11 +193,23 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPackages(limit?: number): Promise<Package[]> {
-    const query = db.select().from(packages).orderBy(desc(packages.createdAt));
-    if (limit) {
-      return await query.limit(limit);
+    try {
+      // Use raw SQL to bypass schema cache issue with resi column
+      const limitClause = limit ? `LIMIT ${limit}` : '';
+      const result = await db.execute(`
+        SELECT id, package_id, resi, barcode, recipient_name, recipient_phone, recipient_address, 
+               priority, status, assigned_kurir_id, created_by, approved_by, delivered_at, 
+               delivery_proof, notes, weight, dimensions, value, sender_name, sender_phone, 
+               pickup_address, created_at, updated_at 
+        FROM packages 
+        ORDER BY created_at DESC 
+        ${limitClause}
+      `);
+      return result.rows as Package[];
+    } catch (error) {
+      console.error("Error fetching packages:", error);
+      throw error;
     }
-    return await query;
   }
 
   async assignPackageToKurir(packageId: number, kurirId: number, assignedBy: number): Promise<Package | undefined> {
