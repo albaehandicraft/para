@@ -313,7 +313,7 @@ export class DatabaseStorage implements IStorage {
         // Log status change in package_status_history if table exists
         try {
           await freshClient.query(`
-            INSERT INTO package_status_history (package_id, from_status, to_status, changed_by, notes, created_at)
+            INSERT INTO package_status_history (package_id, from_status, to_status, changed_by, notes, timestamp)
             VALUES ($1, 'created', 'assigned', $2, $3, NOW())
           `, [packageId, assignedBy, `Assigned to kurir ID: ${kurirId}`]);
         } catch (historyError) {
