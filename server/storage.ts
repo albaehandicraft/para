@@ -202,25 +202,7 @@ export class DatabaseStorage implements IStorage {
         `, [kurirId]);
         await freshClient.query('COMMIT');
         
-        const packageRows = result.rows.map(row => ({
-          id: row.id,
-          packageId: row.package_id,
-          barcode: row.barcode,
-          recipientName: row.recipient_name,
-          recipientPhone: row.recipient_phone,
-          recipientAddress: row.recipient_address,
-          priority: row.priority,
-          status: row.status,
-          assignedKurirId: row.assigned_kurir_id,
-          createdBy: row.created_by,
-          approvedBy: row.approved_by,
-          deliveredAt: row.delivered_at,
-          deliveryProof: row.delivery_proof,
-          notes: row.notes,
-          createdAt: row.created_at,
-          updatedAt: row.updated_at,
-          resi: row.resi
-        }));
+        const packageRows = result.rows.map(mapRowToPackage);
         
         return packageRows as Package[];
       } catch (queryError) {
@@ -248,25 +230,7 @@ export class DatabaseStorage implements IStorage {
         `);
         await freshClient.query('COMMIT');
         
-        const packageRows = result.rows.map(row => ({
-          id: row.id,
-          packageId: row.package_id,
-          barcode: row.barcode,
-          recipientName: row.recipient_name,
-          recipientPhone: row.recipient_phone,
-          recipientAddress: row.recipient_address,
-          priority: row.priority,
-          status: row.status,
-          assignedKurirId: row.assigned_kurir_id,
-          createdBy: row.created_by,
-          approvedBy: row.approved_by,
-          deliveredAt: row.delivered_at,
-          deliveryProof: row.delivery_proof,
-          notes: row.notes,
-          createdAt: row.created_at,
-          updatedAt: row.updated_at,
-          resi: row.resi
-        }));
+        const packageRows = result.rows.map(mapRowToPackage);
         
         return packageRows as Package[];
       } catch (queryError) {
@@ -359,25 +323,7 @@ export class DatabaseStorage implements IStorage {
         
         await freshClient.query('COMMIT');
         
-        return {
-          id: updatedPackage.id,
-          packageId: updatedPackage.package_id,
-          barcode: updatedPackage.barcode,
-          recipientName: updatedPackage.recipient_name,
-          recipientPhone: updatedPackage.recipient_phone,
-          recipientAddress: updatedPackage.recipient_address,
-          priority: updatedPackage.priority,
-          status: updatedPackage.status,
-          assignedKurirId: updatedPackage.assigned_kurir_id,
-          createdBy: updatedPackage.created_by,
-          approvedBy: updatedPackage.approved_by,
-          deliveredAt: updatedPackage.delivered_at,
-          deliveryProof: updatedPackage.delivery_proof,
-          notes: updatedPackage.notes,
-          createdAt: updatedPackage.created_at,
-          updatedAt: updatedPackage.updated_at,
-          resi: updatedPackage.resi
-        } as Package;
+        return mapRowToPackage(updatedPackage) as Package;
         
       } catch (queryError) {
         await freshClient.query('ROLLBACK');
