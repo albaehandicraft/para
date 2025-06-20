@@ -55,17 +55,13 @@ export default function PengirimanManagement() {
     queryKey: ["/api/packages"],
   });
 
-  const { data: kurirs = [] } = useQuery({
-    queryKey: ["/api/users", { role: "kurir" }],
+  const { data: kurirUsers = [] } = useQuery<any[]>({
+    queryKey: ["/api/users"],
     queryFn: async () => {
-      const response = await fetch("/api/users?role=kurir", {
-        credentials: "include",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
-        },
-      });
-      if (!response.ok) throw new Error("Failed to fetch kurirs");
-      return response.json();
+      const response = await fetch("/api/users");
+      if (!response.ok) throw new Error("Failed to fetch users");
+      const users = await response.json();
+      return users.filter((user: any) => user.role === "kurir");
     },
   });
 
@@ -85,6 +81,13 @@ export default function PengirimanManagement() {
         recipientPhone: "",
         recipientAddress: "",
         priority: "normal",
+        notes: "",
+        weight: 0,
+        dimensions: "",
+        value: 0,
+        senderName: "",
+        senderPhone: "",
+        pickupAddress: "",
       });
       // Force invalidate all package-related queries
       queryClient.invalidateQueries({ queryKey: ["/api/packages"], refetchType: "all" });
@@ -251,6 +254,36 @@ export default function PengirimanManagement() {
             <form onSubmit={handleCreatePackage} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
+                  <Label htmlFor="recipientName">Recipient Name</Label>
+                  <Input
+                    id="recipientName"
+                    value={formData.recipientName}
+                    onChange={(e) => setFormData({ ...formData, recipientName: e.target.value })}
+                    placeholder="Full name of recipient"
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="recipientPhone">Recipient Phone</Label>
+                  <Input
+                    id="recipientPhone"
+                    value={formData.recipientPhone}
+                    onChange={(e) => setFormData({ ...formData, recipientPhone: e.target.value })}
+                    placeholder="Phone number"
+                    required
+                  />
+                </div>
+                <div className="col-span-2">
+                  <Label htmlFor="recipientAddress">Recipient Address</Label>
+                  <Textarea
+                    id="recipientAddress"
+                    value={formData.recipientAddress}
+                    onChange={(e) => setFormData({ ...formData, recipientAddress: e.target.value })}
+                    placeholder="Complete delivery address"
+                    required
+                  />
+                </div>
+                <div>
                   <Label htmlFor="priority">Priority</Label>
                   <Select
                     value={formData.priority}
@@ -278,140 +311,16 @@ export default function PengirimanManagement() {
                     }
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select Kurir" />
+                      <SelectValue placeholder="Select kurir" />
                     </SelectTrigger>
                     <SelectContent>
-                      {kurirs?.map((kurir: any) => (
+                      {kurirUsers.map((kurir: any) => (
                         <SelectItem key={kurir.id} value={kurir.id.toString()}>
                           {kurir.fullName}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
-              </div>
-
-              {/* Sender Information */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium text-gray-900">Sender Information</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="senderName">Sender Name</Label>
-                    <Input
-                      id="senderName"
-                      value={formData.senderName}
-                      onChange={(e) => setFormData({ ...formData, senderName: e.target.value })}
-                      placeholder="Name of the sender"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="senderPhone">Sender Phone</Label>
-                    <Input
-                      id="senderPhone"
-                      type="tel"
-                      value={formData.senderPhone}
-                      onChange={(e) => setFormData({ ...formData, senderPhone: e.target.value })}
-                      placeholder="Sender phone number"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <Label htmlFor="pickupAddress">Pickup Address</Label>
-                  <Textarea
-                    id="pickupAddress"
-                    rows={2}
-                    value={formData.pickupAddress}
-                    onChange={(e) => setFormData({ ...formData, pickupAddress: e.target.value })}
-                    placeholder="Address where package will be picked up"
-                  />
-                </div>
-              </div>
-
-              {/* Recipient Information */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium text-gray-900">Recipient Information</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="recipientName">Full Name *</Label>
-                    <Input
-                      id="recipientName"
-                      value={formData.recipientName}
-                      onChange={(e) => setFormData({ ...formData, recipientName: e.target.value })}
-                      required
-                      placeholder="Recipient full name"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="recipientPhone">Phone Number *</Label>
-                    <Input
-                      id="recipientPhone"
-                      type="tel"
-                      value={formData.recipientPhone}
-                      onChange={(e) => setFormData({ ...formData, recipientPhone: e.target.value })}
-                      required
-                      placeholder="Recipient phone number"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <Label htmlFor="recipientAddress">Delivery Address *</Label>
-                  <Textarea
-                    id="recipientAddress"
-                    rows={3}
-                    value={formData.recipientAddress}
-                    onChange={(e) => setFormData({ ...formData, recipientAddress: e.target.value })}
-                    required
-                    placeholder="Complete delivery address with landmarks"
-                  />
-                </div>
-              </div>
-
-              {/* Package Details */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium text-gray-900">Package Details</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <Label htmlFor="weight">Weight (kg)</Label>
-                    <Input
-                      id="weight"
-                      type="number"
-                      step="0.1"
-                      min="0"
-                      value={formData.weight}
-                      onChange={(e) => setFormData({ ...formData, weight: parseFloat(e.target.value) || 0 })}
-                      placeholder="0.0"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="dimensions">Dimensions (cm)</Label>
-                    <Input
-                      id="dimensions"
-                      value={formData.dimensions}
-                      onChange={(e) => setFormData({ ...formData, dimensions: e.target.value })}
-                      placeholder="L x W x H"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="value">Declared Value (IDR)</Label>
-                    <Input
-                      id="value"
-                      type="number"
-                      min="0"
-                      value={formData.value}
-                      onChange={(e) => setFormData({ ...formData, value: parseInt(e.target.value) || 0 })}
-                      placeholder="0"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <Label htmlFor="notes">Special Instructions</Label>
-                  <Textarea
-                    id="notes"
-                    rows={2}
-                    value={formData.notes}
-                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                    placeholder="Any special handling instructions or notes"
-                  />
                 </div>
               </div>
 
@@ -463,93 +372,123 @@ export default function PengirimanManagement() {
       {/* Package Categories */}
       <Card>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="text-left py-3 px-4 font-medium text-gray-500 text-sm">Package ID</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-500 text-sm">Recipient</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-500 text-sm">Kurir</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-500 text-sm">Priority</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-500 text-sm">Status</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-500 text-sm">Created</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-500 text-sm">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {packages.map((pkg: any) => (
-                  <tr key={pkg.id} className="border-b border-gray-100 hover:bg-gray-50">
-                    <td className="py-3 px-4 text-sm font-medium text-gray-900">
-                      {pkg.packageId}
-                    </td>
-                    <td className="py-3 px-4">
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">
-                          {pkg.recipientName}
-                        </div>
-                        <div className="text-sm text-gray-500">{pkg.recipientPhone}</div>
-                        <div className="text-xs text-gray-400 truncate max-w-xs">
-                          {pkg.recipientAddress}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="py-3 px-4">
-                      {pkg.assignedKurirId ? (
-                        <div className="flex items-center">
-                          <User className="w-4 h-4 text-gray-400 mr-2" />
-                          <span className="text-sm">Assigned</span>
-                        </div>
-                      ) : (
-                        <Select
-                          onValueChange={(value) => handleAssignPackage(pkg.id, parseInt(value))}
-                        >
-                          <SelectTrigger className="w-32">
-                            <SelectValue placeholder="Assign" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {kurirs?.map((kurir: any) => (
-                              <SelectItem key={kurir.id} value={kurir.id.toString()}>
-                                {kurir.fullName}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      )}
-                    </td>
-                    <td className="py-3 px-4">
-                      {getPriorityBadge(pkg.priority)}
-                    </td>
-                    <td className="py-3 px-4">
-                      {getStatusBadge(pkg.status)}
-                    </td>
-                    <td className="py-3 px-4 text-sm text-gray-500">
-                      {new Date(pkg.createdAt).toLocaleDateString()}
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="flex items-center space-x-2">
-                        <Button size="sm" variant="ghost">
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                        <Button size="sm" variant="ghost">
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            
-            {!packages?.length && (
-              <div className="text-center py-12 text-gray-500">
-                <Package className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                <p className="text-lg font-medium mb-1">No packages found</p>
-                <p className="text-sm">Create your first pengiriman to get started</p>
-              </div>
-            )}
-          </div>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-5 rounded-none border-b">
+              <TabsTrigger value="all" className="rounded-none">
+                All ({(packages || []).length})
+              </TabsTrigger>
+              <TabsTrigger value="created" className="rounded-none">
+                Created ({(packages || []).filter((p: any) => p.status === "created").length})
+              </TabsTrigger>
+              <TabsTrigger value="assigned" className="rounded-none">
+                Assigned ({(packages || []).filter((p: any) => p.status === "assigned").length})
+              </TabsTrigger>
+              <TabsTrigger value="in_transit" className="rounded-none">
+                In Transit ({(packages || []).filter((p: any) => ["picked_up", "in_transit"].includes(p.status)).length})
+              </TabsTrigger>
+              <TabsTrigger value="completed" className="rounded-none">
+                Completed ({(packages || []).filter((p: any) => ["delivered", "failed"].includes(p.status)).length})
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value={activeTab} className="p-6">
+              {filteredPackages.length === 0 ? (
+                <div className="text-center py-12">
+                  <Package className="mx-auto h-12 w-12 text-gray-400" />
+                  <h3 className="mt-2 text-sm font-medium text-gray-900">No packages found</h3>
+                  <p className="mt-1 text-sm text-gray-500">
+                    {searchQuery ? `No packages match "${searchQuery}"` : "No packages in this category"}
+                  </p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-gray-200">
+                        <th className="text-left py-3 px-4 font-medium text-gray-500 text-sm">Package ID</th>
+                        <th className="text-left py-3 px-4 font-medium text-gray-500 text-sm">Resi</th>
+                        <th className="text-left py-3 px-4 font-medium text-gray-500 text-sm">Recipient</th>
+                        <th className="text-left py-3 px-4 font-medium text-gray-500 text-sm">Phone</th>
+                        <th className="text-left py-3 px-4 font-medium text-gray-500 text-sm">Kurir</th>
+                        <th className="text-left py-3 px-4 font-medium text-gray-500 text-sm">Priority</th>
+                        <th className="text-left py-3 px-4 font-medium text-gray-500 text-sm">Status</th>
+                        <th className="text-left py-3 px-4 font-medium text-gray-500 text-sm">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredPackages.map((pkg: any) => (
+                        <tr key={pkg.id} className="border-b border-gray-100 hover:bg-gray-50">
+                          <td className="py-3 px-4">
+                            <div className="font-medium text-gray-900">{pkg.packageId}</div>
+                            <div className="text-xs text-gray-500">{pkg.barcode}</div>
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="text-sm font-medium text-blue-600">{pkg.resi}</div>
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="font-medium text-gray-900">{pkg.recipientName}</div>
+                            <div className="text-xs text-gray-500 truncate max-w-xs">{pkg.recipientAddress}</div>
+                          </td>
+                          <td className="py-3 px-4 text-sm text-gray-600">{pkg.recipientPhone}</td>
+                          <td className="py-3 px-4">
+                            {pkg.assignedKurir ? (
+                              <div className="flex items-center">
+                                <User className="w-3 h-3 mr-1 text-blue-500" />
+                                <span className="text-sm font-medium text-blue-600">{pkg.assignedKurir}</span>
+                              </div>
+                            ) : (
+                              <span className="text-xs text-gray-400">Unassigned</span>
+                            )}
+                          </td>
+                          <td className="py-3 px-4">{getPriorityBadge(pkg.priority)}</td>
+                          <td className="py-3 px-4">{getStatusBadge(pkg.status)}</td>
+                          <td className="py-3 px-4">
+                            <div className="flex items-center space-x-2">
+                              <Button variant="outline" size="sm">
+                                <Eye className="w-3 h-3 mr-1" />
+                                View
+                              </Button>
+                              {pkg.status === "created" && (
+                                <Select onValueChange={(value) => handleAssignPackage(pkg.id, parseInt(value))}>
+                                  <SelectTrigger className="w-24">
+                                    <SelectValue placeholder="Assign" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {kurirUsers.map((kurir: any) => (
+                                      <SelectItem key={kurir.id} value={kurir.id.toString()}>
+                                        {kurir.fullName}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
         </CardContent>
       </Card>
+
+      {/* Barcode Scanner Modal */}
+      {isScannerOpen && (
+        <Dialog open={isScannerOpen} onOpenChange={setIsScannerOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Scan Barcode</DialogTitle>
+            </DialogHeader>
+            <BarcodeScanner
+              onScanSuccess={handleBarcodeSearch}
+              scanType="pickup"
+            />
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
