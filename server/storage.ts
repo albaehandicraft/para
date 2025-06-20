@@ -194,16 +194,17 @@ export class DatabaseStorage implements IStorage {
 
   async getPackages(limit?: number): Promise<Package[]> {
     try {
-      // Use separate raw pool to avoid Drizzle schema cache
       const client = await rawPool.connect();
       
       try {
         const limitClause = limit ? `LIMIT ${limit}` : '';
+        
+        // Query with all columns that exist in the actual database
         const query = `
           SELECT id, package_id, resi, barcode, recipient_name, recipient_phone, recipient_address, 
                  priority, status, assigned_kurir_id, created_by, approved_by, delivered_at, 
-                 delivery_proof, notes, weight, dimensions, value, sender_name, sender_phone, 
-                 pickup_address, created_at, updated_at 
+                 delivery_proof, notes, created_at, updated_at, weight, dimensions, value, 
+                 sender_name, sender_phone, pickup_address
           FROM packages 
           ORDER BY created_at DESC 
           ${limitClause}
