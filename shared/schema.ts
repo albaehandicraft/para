@@ -45,6 +45,7 @@ export const geofenceZones = pgTable("geofence_zones", {
 export const packages = pgTable("packages", {
   id: serial("id").primaryKey(),
   packageId: text("package_id").notNull().unique(),
+  resi: text("resi").notNull().unique(), // Nomor resi tracking
   barcode: text("barcode").unique(),
   recipientName: text("recipient_name").notNull(),
   recipientPhone: text("recipient_phone").notNull(),
