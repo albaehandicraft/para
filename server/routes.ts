@@ -350,15 +350,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Already checked out today" });
       }
       
-      // Update with checkout information
-      const updatedAttendance = await storage.updateAttendanceStatus(
+      // Update with checkout information including time and location
+      const updatedAttendance = await storage.updateAttendanceCheckout(
         attendance.id,
-        "present",
-        req.user!.id
+        new Date(),
+        lat,
+        lng
       );
       
       res.json(updatedAttendance);
     } catch (error) {
+      console.error("Checkout error:", error);
       res.status(500).json({ message: "Failed to check out" });
     }
   });

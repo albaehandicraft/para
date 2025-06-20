@@ -35,6 +35,7 @@ export interface IStorage {
   createAttendance(attendanceData: InsertAttendance): Promise<Attendance>;
   getAttendanceByDate(kurirId: number, date: Date): Promise<Attendance | undefined>;
   updateAttendanceStatus(id: number, status: string, approvedBy: number, notes?: string): Promise<Attendance | undefined>;
+  updateAttendanceCheckout(id: number, checkOutTime: Date, checkOutLat?: number, checkOutLng?: number): Promise<Attendance | undefined>;
   getAttendanceByDateRange(startDate: Date, endDate: Date): Promise<any[]>;
   getKurirAttendanceHistory(kurirId: number, startDate: Date, endDate: Date): Promise<Attendance[]>;
   getKurirAttendanceSummary(startDate: Date, endDate: Date): Promise<any[]>;
@@ -386,6 +387,22 @@ export class DatabaseStorage implements IStorage {
   async updateAttendanceStatus(id: number, status: string, approvedBy: number, notes?: string): Promise<Attendance | undefined> {
     const updateData: any = { status: status as any, approvedBy };
     if (notes) updateData.notes = notes;
+    
+    const [att] = await db
+      .update(attendance)
+      .set(updateData)
+      .where(eq(attendance.id, id))
+      .returning();
+    return att || undefined;
+  }
+
+  async updateAttendanceCheckout(id: number, checkOutTime: Date, checkOutLat?: number, checkOutLng?: number): Promise<Attendance | undefined> {
+    const updateData: any = { 
+      checkOutTime,
+      status: 'present' as any
+    };
+    if (checkOutLat !== undefined) updateData.checkOutLat = checkOutLat.toString();
+    if (checkOutLng !== undefined) updateData.checkOutLng = checkOutLng.toString();
     
     const [att] = await db
       .update(attendance)
