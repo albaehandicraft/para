@@ -198,20 +198,59 @@ export class DatabaseStorage implements IStorage {
       const client = await pgPool.connect();
       
       try {
-        const limitClause = limit ? `LIMIT ${limit}` : 'LIMIT 50';
-        const query = `
-          SELECT id, package_id, barcode, recipient_name, recipient_phone, recipient_address, 
-                 priority, status, assigned_kurir_id, created_by, approved_by, delivered_at, 
-                 delivery_proof, notes, created_at, updated_at
-          FROM packages 
-          ORDER BY created_at DESC 
-          ${limitClause}
-        `;
+        // First, verify we're connected to the right database
+        const dbCheckResult = await client.query('SELECT current_database(), current_schema()');
+        console.log('Connected to database:', dbCheckResult.rows[0]);
         
-        const result = await client.query(query);
-        const packageRows = result.rows;
+        // Check all schemas and tables
+        const allTablesResult = await client.query(`
+          SELECT table_schema, table_name FROM information_schema.tables 
+          WHERE table_name = 'packages' ORDER BY table_schema
+        `);
+        console.log('All packages tables found:', allTablesResult.rows);
         
-        console.log(`Found ${packageRows.length} packages in database`);
+        // Check all schemas available
+        const schemasResult = await client.query(`
+          SELECT schema_name FROM information_schema.schemata 
+          ORDER BY schema_name
+        `);
+        console.log('Available schemas:', schemasResult.rows.map(r => r.schema_name));
+        
+        // Try to find packages in any schema
+        let packageRows = [];
+        for (const tableInfo of allTablesResult.rows) {
+          try {
+            const schemaTable = `${tableInfo.table_schema}.packages`;
+            const countResult = await client.query(`SELECT COUNT(*) as count FROM ${schemaTable}`);
+            console.log(`Packages count in ${schemaTable}:`, countResult.rows[0].count);
+            
+            if (parseInt(countResult.rows[0].count) > 0) {
+              // Found packages, query them
+              const limitClause = limit ? `LIMIT ${limit}` : 'LIMIT 50';
+              const query = `
+                SELECT id, package_id, barcode, recipient_name, recipient_phone, recipient_address, 
+                       priority, status, assigned_kurir_id, created_by, approved_by, delivered_at, 
+                       delivery_proof, notes, created_at, updated_at
+                FROM ${schemaTable}
+                ORDER BY created_at DESC 
+                ${limitClause}
+              `;
+              
+              const result = await client.query(query);
+              packageRows = result.rows;
+              console.log(`Found ${packageRows.length} packages in ${schemaTable}`);
+              break;
+            }
+          } catch (err) {
+            console.log(`Error querying ${tableInfo.table_schema}.packages:`, err.message);
+          }
+        }
+        
+        // If no packages found in any schema, return empty array
+        if (packageRows.length === 0) {
+          console.log('No packages found in any schema');
+          return [];
+        }
         
         // Add resi tracking numbers based on package IDs
         packageRows.forEach((pkg) => {
