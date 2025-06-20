@@ -5,6 +5,7 @@ import { storage } from "./storage";
 import { authenticateToken, requireRole, generateToken, type AuthRequest } from "./middleware/auth";
 import { BarcodeService } from "./services/barcode";
 import { GeofencingService } from "./services/geofencing";
+import { PDFGenerator } from "./services/pdfGenerator";
 import { insertUserSchema, insertPackageSchema, loginSchema, insertGeofenceZoneSchema } from "@shared/schema";
 import { z } from "zod";
 
@@ -315,7 +316,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const reportsData = await storage.getReportsData(startDate, endDate);
       
-      const { PDFGenerator } = await import("../services/pdfGenerator");
+
       
       if (format === "pdf") {
         const pdfBuffer = await PDFGenerator.generatePDF(
