@@ -126,6 +126,7 @@ This is a full-stack delivery management system built with React, Express.js, an
 - June 20, 2025. Implemented comprehensive View functionality for package details with organized sections
 - June 20, 2025. Enhanced database queries with LEFT JOIN to display assigned kurir names instead of "Unassigned"
 - June 20, 2025. Added admin reassignment capabilities for packages in assigned/picked_up status
+- June 20, 2025. Built comprehensive kurir attendance management system with analytics, approval workflows, and performance tracking
 
 ## Database Configuration
 

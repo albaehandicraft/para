@@ -13,6 +13,7 @@ import Dashboard from "@/pages/Dashboard";
 import PengirimanManagement from "@/pages/PengirimanManagement";
 import UserManagement from "@/pages/UserManagement";
 import AttendanceTracking from "@/pages/AttendanceTracking";
+import AttendanceManagement from "@/pages/AttendanceManagement";
 import KurirDashboard from "@/pages/KurirDashboard";
 import KurirAttendance from "@/pages/KurirAttendance";
 import KurirPackages from "@/pages/KurirPackages";
@@ -157,7 +158,7 @@ function Router() {
       <Route path="/attendance">
         <ProtectedRoute>
           <RoleGuard roles={["superadmin", "admin", "pic"]} fallback={<NotFound />}>
-            <AttendanceTracking />
+            <AttendanceManagement />
           </RoleGuard>
         </ProtectedRoute>
       </Route>

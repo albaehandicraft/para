@@ -470,7 +470,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         attendanceRate: records.length > 0 ? 
           (records.filter(r => r.status === "present" || r.status === "approved").length / records.length) * 100 : 0,
         averageWorkingHours: records.length > 0 ? 
-          records.reduce((sum, r) => sum + (r.workingHours || 0), 0) / records.length : 0,
+          records.reduce((sum, r: any) => sum + (r.workingHours || 0), 0) / records.length : 0,
         totalWorkingDays: records.length
       };
       
