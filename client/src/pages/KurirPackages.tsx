@@ -74,11 +74,24 @@ export default function KurirPackages() {
         title: "Status berhasil diperbarui",
         description: `Paket ${variables.action === "pickup" ? "diambil" : "dikirim"} berhasil`,
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/packages/kurir"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/packages/available"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/packages"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/packages/kurir", user?.id] });
-      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/metrics"] });
+      // Force invalidate all package-related queries
+      queryClient.invalidateQueries({ queryKey: ["/api/packages"], refetchType: "all" });
+      queryClient.invalidateQueries({ queryKey: ["/api/packages/kurir"], refetchType: "all" });
+      queryClient.invalidateQueries({ queryKey: ["/api/packages/available"], refetchType: "all" });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/metrics"], refetchType: "all" });
+      
+      // Clear and refetch cache manually
+      queryClient.removeQueries({ queryKey: ["/api/packages"] });
+      queryClient.removeQueries({ queryKey: ["/api/packages/kurir"] });
+      queryClient.removeQueries({ queryKey: ["/api/packages/available"] });
+      
+      // Force refetch after a short delay
+      setTimeout(() => {
+        queryClient.refetchQueries({ queryKey: ["/api/packages"] });
+        queryClient.refetchQueries({ queryKey: ["/api/packages/kurir"] });  
+        queryClient.refetchQueries({ queryKey: ["/api/packages/available"] });
+      }, 100);
+      
       setSelectedPackage(null);
       setDeliveryNotes("");
     },
@@ -102,10 +115,23 @@ export default function KurirPackages() {
         title: "Paket berhasil diambil",
         description: "Paket telah ditugaskan kepada Anda",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/packages/kurir"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/packages/available"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/packages"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/packages/kurir", user?.id] });
+      // Force invalidate all package-related queries
+      queryClient.invalidateQueries({ queryKey: ["/api/packages"], refetchType: "all" });
+      queryClient.invalidateQueries({ queryKey: ["/api/packages/kurir"], refetchType: "all" });
+      queryClient.invalidateQueries({ queryKey: ["/api/packages/available"], refetchType: "all" });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/metrics"], refetchType: "all" });
+      
+      // Clear and refetch cache manually
+      queryClient.removeQueries({ queryKey: ["/api/packages"] });
+      queryClient.removeQueries({ queryKey: ["/api/packages/kurir"] });
+      queryClient.removeQueries({ queryKey: ["/api/packages/available"] });
+      
+      // Force refetch after a short delay
+      setTimeout(() => {
+        queryClient.refetchQueries({ queryKey: ["/api/packages"] });
+        queryClient.refetchQueries({ queryKey: ["/api/packages/kurir"] });
+        queryClient.refetchQueries({ queryKey: ["/api/packages/available"] });
+      }, 100);
     },
     onError: (error: any) => {
       toast({
