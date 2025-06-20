@@ -400,12 +400,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/attendance/:id/approve", authenticateToken, requireRole(["pic"]), async (req: AuthRequest, res) => {
+  app.put("/api/attendance/:id/approve", authenticateToken, requireRole(["pic", "admin", "superadmin"]), async (req: AuthRequest, res) => {
     try {
       const id = parseInt(req.params.id);
-      const { status } = req.body;
+      const { status, notes } = req.body;
       
-      const attendance = await storage.updateAttendanceStatus(id, status, req.user!.id);
+      const attendance = await storage.updateAttendanceStatus(id, status, req.user!.id, notes);
       
       if (!attendance) {
         return res.status(404).json({ message: "Attendance record not found" });
@@ -414,6 +414,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(attendance);
     } catch (error) {
       res.status(400).json({ message: "Failed to update attendance" });
+    }
+  });
+
+  // Enhanced attendance management endpoints
+  app.get("/api/attendance/records", authenticateToken, requireRole(["pic", "admin", "superadmin"]), async (req: AuthRequest, res) => {
+    try {
+      const { startDate, endDate, status, kurirId, search } = req.query;
+      
+      const start = new Date(startDate as string);
+      const end = new Date(endDate as string);
+      
+      let records = await storage.getAttendanceByDateRange(start, end);
+      
+      // Filter by status if specified
+      if (status && status !== "all") {
+        records = records.filter(record => record.status === status);
+      }
+      
+      // Filter by kurir if specified
+      if (kurirId && kurirId !== "all") {
+        records = records.filter(record => record.kurirId === parseInt(kurirId as string));
+      }
+      
+      // Filter by search term if specified
+      if (search) {
+        const searchTerm = (search as string).toLowerCase();
+        records = records.filter(record => 
+          record.kurirName?.toLowerCase().includes(searchTerm) ||
+          record.notes?.toLowerCase().includes(searchTerm)
+        );
+      }
+      
+      res.json(records);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch attendance records" });
+    }
+  });
+
+  app.get("/api/attendance/stats", authenticateToken, requireRole(["pic", "admin", "superadmin"]), async (req: AuthRequest, res) => {
+    try {
+      const { startDate, endDate } = req.query;
+      
+      const start = new Date(startDate as string);
+      const end = new Date(endDate as string);
+      
+      const records = await storage.getAttendanceByDateRange(start, end);
+      
+      const stats = {
+        totalPresent: records.filter(r => r.status === "present" || r.status === "approved").length,
+        totalAbsent: records.filter(r => r.status === "absent" || r.status === "rejected").length,
+        totalPending: records.filter(r => r.status === "pending").length,
+        totalApproved: records.filter(r => r.status === "approved").length,
+        totalRejected: records.filter(r => r.status === "rejected").length,
+        attendanceRate: records.length > 0 ? 
+          (records.filter(r => r.status === "present" || r.status === "approved").length / records.length) * 100 : 0,
+        averageWorkingHours: records.length > 0 ? 
+          records.reduce((sum, r) => sum + (r.workingHours || 0), 0) / records.length : 0,
+        totalWorkingDays: records.length
+      };
+      
+      res.json(stats);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch attendance stats" });
+    }
+  });
+
+  app.get("/api/attendance/kurir-summary", authenticateToken, requireRole(["pic", "admin", "superadmin"]), async (req: AuthRequest, res) => {
+    try {
+      const { startDate, endDate } = req.query;
+      
+      const start = new Date(startDate as string);
+      const end = new Date(endDate as string);
+      
+      const summary = await storage.getKurirAttendanceSummary(start, end);
+      
+      res.json(summary);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch kurir attendance summary" });
     }
   });
 

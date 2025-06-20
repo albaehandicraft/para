@@ -382,7 +382,7 @@ export class DatabaseStorage implements IStorage {
     return att || undefined;
   }
 
-  async updateAttendanceStatus(id: number, status: string, approvedBy: number): Promise<Attendance | undefined> {
+  async updateAttendanceStatus(id: number, status: string, approvedBy: number, notes?: string): Promise<Attendance | undefined> {
     const [att] = await db
       .update(attendance)
       .set({ status: status as any, approvedBy })
