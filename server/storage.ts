@@ -199,9 +199,9 @@ export class DatabaseStorage implements IStorage {
       try {
         const limitClause = limit ? `LIMIT ${limit}` : '';
         
-        // Use direct PostgreSQL client with only core columns
+        // Use direct PostgreSQL client with resi column included
         const query = `
-          SELECT id, package_id, barcode, recipient_name, recipient_phone, recipient_address, 
+          SELECT id, package_id, resi, barcode, recipient_name, recipient_phone, recipient_address, 
                  priority, status, assigned_kurir_id, created_by, approved_by, delivered_at, 
                  delivery_proof, notes, created_at, updated_at
           FROM packages 

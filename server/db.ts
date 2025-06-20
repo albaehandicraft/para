@@ -16,12 +16,21 @@ export const pool = new Pool({
   connectionTimeoutMillis: 3000,
 });
 
-// Direct PostgreSQL pool to bypass Neon cache issues
+// Multiple PostgreSQL pools to ensure fresh connections
 export const pgPool = new PgPool({
   connectionString: DATABASE_URL,
-  max: 10,
-  idleTimeoutMillis: 10000,
-  connectionTimeoutMillis: 3000,
+  max: 5,
+  idleTimeoutMillis: 5000,
+  connectionTimeoutMillis: 2000,
+  ssl: { rejectUnauthorized: false }
+});
+
+// Fresh pool specifically for packages queries
+export const packagesPool = new PgPool({
+  connectionString: DATABASE_URL,
+  max: 3,
+  idleTimeoutMillis: 3000,
+  connectionTimeoutMillis: 1000,
   ssl: { rejectUnauthorized: false }
 });
 
