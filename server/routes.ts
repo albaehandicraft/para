@@ -292,6 +292,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Reports endpoints
+  app.get("/api/reports", authenticateToken, requireRole(["superadmin", "admin"]), async (req, res) => {
+    try {
+      const { from, to, type } = req.query;
+      const startDate = from ? new Date(from as string) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      const endDate = to ? new Date(to as string) : new Date();
+      
+      const reportsData = await storage.getReportsData(startDate, endDate);
+      res.json(reportsData);
+    } catch (error) {
+      console.error("Error fetching reports data:", error);
+      res.status(500).json({ message: "Failed to fetch reports data" });
+    }
+  });
+
+  app.get("/api/reports/export", authenticateToken, requireRole(["superadmin", "admin"]), async (req, res) => {
+    try {
+      const { format, from, to } = req.query;
+      const startDate = from ? new Date(from as string) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      const endDate = to ? new Date(to as string) : new Date();
+      
+      const reportsData = await storage.getReportsData(startDate, endDate);
+      
+      if (format === "csv") {
+        // Generate CSV format
+        const csvData = [
+          "Package Status,Count",
+          ...reportsData.packagesByStatus.map(item => `${item.name},${item.value}`)
+        ].join('\n');
+        
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', `attachment; filename="delivery-report-${from}-to-${to}.csv"`);
+        res.send(csvData);
+      } else {
+        // For other formats, return JSON for now
+        res.json(reportsData);
+      }
+    } catch (error) {
+      console.error("Error exporting reports:", error);
+      res.status(500).json({ message: "Failed to export reports" });
+    }
+  });
+
   // Geofencing routes
   app.get("/api/geofence", authenticateToken, async (req, res) => {
     try {

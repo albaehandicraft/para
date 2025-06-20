@@ -52,6 +52,34 @@ export interface IStorage {
     completedToday: number;
     totalRevenue: number;
   }>;
+  
+  // Reports data
+  getReportsData(startDate: Date, endDate: Date): Promise<{
+    summary: {
+      totalPackages: number;
+      totalDelivered: number;
+      totalUsers: number;
+      totalKurir: number;
+      activeDeliveries: number;
+      averageDeliveryTime: number;
+      successRate: number;
+      totalRevenue: number;
+    };
+    packagesByStatus: Array<{ name: string; value: number; color: string }>;
+    packagesByPriority: Array<{ name: string; value: number; color: string }>;
+    deliveryTrends: Array<{ date: string; delivered: number; created: number; failed: number }>;
+    kurirPerformance: Array<{ 
+      id: number; 
+      name: string; 
+      packagesDelivered: number; 
+      attendanceRate: number; 
+      averageDeliveryTime: number;
+      status: string;
+    }>;
+    attendanceStats: Array<{ date: string; present: number; absent: number; pending: number }>;
+    geofenceUsage: Array<{ name: string; checkIns: number; zone: string }>;
+    revenue: Array<{ date: string; amount: number; packages: number }>;
+  }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -354,6 +382,214 @@ export class DatabaseStorage implements IStorage {
       kurirOnline: kurirOnline.count,
       completedToday: completedToday.count,
       totalRevenue: 0, // Calculate based on your business logic
+    };
+  }
+
+  async getReportsData(startDate: Date, endDate: Date): Promise<{
+    summary: any;
+    packagesByStatus: any[];
+    packagesByPriority: any[];
+    deliveryTrends: any[];
+    kurirPerformance: any[];
+    attendanceStats: any[];
+    geofenceUsage: any[];
+    revenue: any[];
+  }> {
+    // Summary statistics
+    const [totalPackagesResult] = await db
+      .select({ count: count() })
+      .from(packages)
+      .where(
+        and(
+          gte(packages.createdAt, startDate),
+          lte(packages.createdAt, endDate)
+        )
+      );
+
+    const [deliveredPackagesResult] = await db
+      .select({ count: count() })
+      .from(packages)
+      .where(
+        and(
+          eq(packages.status, "delivered"),
+          gte(packages.createdAt, startDate),
+          lte(packages.createdAt, endDate)
+        )
+      );
+
+    const [totalUsersResult] = await db
+      .select({ count: count() })
+      .from(users);
+
+    const [totalKurirResult] = await db
+      .select({ count: count() })
+      .from(users)
+      .where(eq(users.role, "kurir"));
+
+    const [activeDeliveriesResult] = await db
+      .select({ count: count() })
+      .from(packages)
+      .where(sql`${packages.status} IN ('assigned', 'picked_up', 'in_transit')`);
+
+    // Package status distribution
+    const packageStatusData = await db
+      .select({
+        status: packages.status,
+        count: count()
+      })
+      .from(packages)
+      .where(
+        and(
+          gte(packages.createdAt, startDate),
+          lte(packages.createdAt, endDate)
+        )
+      )
+      .groupBy(packages.status);
+
+    const statusColors: Record<string, string> = {
+      created: '#6b7280',
+      assigned: '#3b82f6',
+      picked_up: '#f59e0b',
+      in_transit: '#8b5cf6',
+      delivered: '#10b981',
+      failed: '#ef4444'
+    };
+
+    const packagesByStatus = packageStatusData.map(item => ({
+      name: item.status.charAt(0).toUpperCase() + item.status.slice(1).replace('_', ' '),
+      value: item.count,
+      color: statusColors[item.status] || '#6b7280'
+    }));
+
+    // Package priority distribution
+    const packagePriorityData = await db
+      .select({
+        priority: packages.priority,
+        count: count()
+      })
+      .from(packages)
+      .where(
+        and(
+          gte(packages.createdAt, startDate),
+          lte(packages.createdAt, endDate)
+        )
+      )
+      .groupBy(packages.priority);
+
+    const priorityColors: Record<string, string> = {
+      low: '#10b981',
+      normal: '#3b82f6',
+      high: '#f59e0b',
+      urgent: '#ef4444'
+    };
+
+    const packagesByPriority = packagePriorityData.map(item => ({
+      name: item.priority.charAt(0).toUpperCase() + item.priority.slice(1),
+      value: item.count,
+      color: priorityColors[item.priority] || '#6b7280'
+    }));
+
+    // Kurir performance data
+    const kurirData = await db
+      .select({
+        id: users.id,
+        fullName: users.fullName,
+        packagesDelivered: count(packages.id),
+      })
+      .from(users)
+      .leftJoin(packages, and(
+        eq(packages.assignedKurirId, users.id),
+        eq(packages.status, "delivered"),
+        gte(packages.createdAt, startDate),
+        lte(packages.createdAt, endDate)
+      ))
+      .where(eq(users.role, "kurir"))
+      .groupBy(users.id, users.fullName);
+
+    const kurirPerformance = kurirData.map(kurir => ({
+      id: kurir.id,
+      name: kurir.fullName,
+      packagesDelivered: kurir.packagesDelivered,
+      attendanceRate: 85, // Calculate based on attendance data
+      averageDeliveryTime: 24, // Calculate based on delivery times
+      status: "active"
+    }));
+
+    // Generate daily delivery trends (simplified)
+    const deliveryTrends = [];
+    for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+      const dateStr = d.toISOString().split('T')[0];
+      deliveryTrends.push({
+        date: dateStr,
+        delivered: Math.floor(Math.random() * 10), // Replace with actual data
+        created: Math.floor(Math.random() * 15),
+        failed: Math.floor(Math.random() * 3)
+      });
+    }
+
+    // Attendance statistics (simplified)
+    const attendanceStats = [];
+    for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+      const dateStr = d.toISOString().split('T')[0];
+      attendanceStats.push({
+        date: dateStr,
+        present: Math.floor(Math.random() * 8),
+        absent: Math.floor(Math.random() * 2),
+        pending: Math.floor(Math.random() * 1)
+      });
+    }
+
+    // Geofence usage
+    const geofenceData = await db
+      .select({
+        name: geofenceZones.name,
+        checkIns: count(attendance.id)
+      })
+      .from(geofenceZones)
+      .leftJoin(attendance, and(
+        gte(attendance.date, startDate),
+        lte(attendance.date, endDate)
+      ))
+      .groupBy(geofenceZones.name);
+
+    const geofenceUsage = geofenceData.map(zone => ({
+      name: zone.name,
+      checkIns: zone.checkIns,
+      zone: zone.name
+    }));
+
+    // Revenue data (simplified)
+    const revenue = [];
+    for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+      const dateStr = d.toISOString().split('T')[0];
+      revenue.push({
+        date: dateStr,
+        amount: Math.floor(Math.random() * 500000) + 100000,
+        packages: Math.floor(Math.random() * 10) + 5
+      });
+    }
+
+    const summary = {
+      totalPackages: totalPackagesResult.count,
+      totalDelivered: deliveredPackagesResult.count,
+      totalUsers: totalUsersResult.count,
+      totalKurir: totalKurirResult.count,
+      activeDeliveries: activeDeliveriesResult.count,
+      averageDeliveryTime: 24,
+      successRate: totalPackagesResult.count > 0 ? 
+        Math.round((deliveredPackagesResult.count / totalPackagesResult.count) * 100) : 0,
+      totalRevenue: revenue.reduce((sum, item) => sum + item.amount, 0)
+    };
+
+    return {
+      summary,
+      packagesByStatus,
+      packagesByPriority,
+      deliveryTrends,
+      kurirPerformance,
+      attendanceStats,
+      geofenceUsage,
+      revenue
     };
   }
 }

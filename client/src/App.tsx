@@ -17,6 +17,7 @@ import KurirDashboard from "@/pages/KurirDashboard";
 import KurirAttendance from "@/pages/KurirAttendance";
 import PICDashboard from "@/pages/PICDashboard";
 import GeofencingSetup from "@/pages/GeofencingSetup";
+import Reports from "@/pages/Reports";
 import NotFound from "@/pages/not-found";
 
 // Update query client to include auth token
@@ -200,11 +201,8 @@ function Router() {
 
       <Route path="/reports">
         <ProtectedRoute>
-          <RoleGuard roles={["superadmin", "admin", "pic"]} fallback={<NotFound />}>
-            <div className="p-6">
-              <h1 className="text-2xl font-bold mb-4">Reports</h1>
-              <p>Reporting functionality will be implemented here.</p>
-            </div>
+          <RoleGuard roles={["superadmin", "admin"]} fallback={<NotFound />}>
+            <Reports />
           </RoleGuard>
         </ProtectedRoute>
       </Route>
