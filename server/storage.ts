@@ -194,75 +194,44 @@ export class DatabaseStorage implements IStorage {
 
   async getPackages(limit?: number): Promise<Package[]> {
     try {
-      // Get a dedicated connection to ensure fresh query execution
-      const client = await pgPool.connect();
+      // Force a completely fresh connection to bypass any caching
+      const freshClient = await pgPool.connect();
       
       try {
-        // First, verify we're connected to the right database
-        const dbCheckResult = await client.query('SELECT current_database(), current_schema()');
-        console.log('Connected to database:', dbCheckResult.rows[0]);
+        // Force transaction isolation to ensure we see all committed data
+        await freshClient.query('BEGIN');
+        await freshClient.query('SET TRANSACTION ISOLATION LEVEL READ COMMITTED');
         
-        // Check all schemas and tables
-        const allTablesResult = await client.query(`
-          SELECT table_schema, table_name FROM information_schema.tables 
-          WHERE table_name = 'packages' ORDER BY table_schema
-        `);
-        console.log('All packages tables found:', allTablesResult.rows);
+        const limitClause = limit ? `LIMIT ${limit}` : 'LIMIT 50';
+        const query = `
+          SELECT id, package_id, barcode, recipient_name, recipient_phone, recipient_address, 
+                 priority, status, assigned_kurir_id, created_by, approved_by, delivered_at, 
+                 delivery_proof, notes, created_at, updated_at
+          FROM packages 
+          ORDER BY created_at DESC 
+          ${limitClause}
+        `;
         
-        // Check all schemas available
-        const schemasResult = await client.query(`
-          SELECT schema_name FROM information_schema.schemata 
-          ORDER BY schema_name
-        `);
-        console.log('Available schemas:', schemasResult.rows.map(r => r.schema_name));
+        const result = await freshClient.query(query);
+        await freshClient.query('COMMIT');
         
-        // Try to find packages in any schema
-        let packageRows = [];
-        for (const tableInfo of allTablesResult.rows) {
-          try {
-            const schemaTable = `${tableInfo.table_schema}.packages`;
-            const countResult = await client.query(`SELECT COUNT(*) as count FROM ${schemaTable}`);
-            console.log(`Packages count in ${schemaTable}:`, countResult.rows[0].count);
-            
-            if (parseInt(countResult.rows[0].count) > 0) {
-              // Found packages, query them
-              const limitClause = limit ? `LIMIT ${limit}` : 'LIMIT 50';
-              const query = `
-                SELECT id, package_id, barcode, recipient_name, recipient_phone, recipient_address, 
-                       priority, status, assigned_kurir_id, created_by, approved_by, delivered_at, 
-                       delivery_proof, notes, created_at, updated_at
-                FROM ${schemaTable}
-                ORDER BY created_at DESC 
-                ${limitClause}
-              `;
-              
-              const result = await client.query(query);
-              packageRows = result.rows;
-              console.log(`Found ${packageRows.length} packages in ${schemaTable}`);
-              break;
-            }
-          } catch (err) {
-            console.log(`Error querying ${tableInfo.table_schema}.packages:`, err.message);
-          }
-        }
+        const packageRows = result.rows;
+        console.log(`Successfully fetched ${packageRows.length} packages from external Neon DB`);
         
-        // If no packages found in any schema, return empty array
-        if (packageRows.length === 0) {
-          console.log('No packages found in any schema');
-          return [];
-        }
-        
-        // Add resi tracking numbers based on package IDs
+        // Add resi tracking numbers based on package IDs  
         packageRows.forEach((pkg) => {
           pkg.resi = `RESI${String(pkg.id).padStart(6, '0')}`;
         });
         
         return packageRows as Package[];
+      } catch (queryError) {
+        await freshClient.query('ROLLBACK');
+        throw queryError;
       } finally {
-        client.release();
+        freshClient.release();
       }
     } catch (error) {
-      console.error("Error fetching packages:", error);
+      console.error("Error fetching packages from external Neon DB:", error);
       return [];
     }
   }
