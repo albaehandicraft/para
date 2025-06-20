@@ -20,6 +20,7 @@ interface PackageItem {
   recipientAddress: string;
   priority: string;
   status: string;
+  assignedKurirId?: number;
   notes?: string;
   createdAt: string;
 }
@@ -53,6 +54,12 @@ export default function KurirPackages() {
     enabled: !!user?.id,
   });
 
+  // Fetch all available packages for pickup
+  const { data: availablePackages = [], isLoading: isLoadingAvailable } = useQuery({
+    queryKey: ["/api/packages/available"],
+    enabled: !!user?.id,
+  });
+
   // Manual package update mutation
   const updatePackageMutation = useMutation({
     mutationFn: async (data: { packageId: number; action: string; notes?: string }) => {
@@ -68,12 +75,36 @@ export default function KurirPackages() {
         description: `Paket ${variables.action === "pickup" ? "diambil" : "dikirim"} berhasil`,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/packages/kurir"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/packages/available"] });
       setSelectedPackage(null);
       setDeliveryNotes("");
     },
     onError: (error: any) => {
       toast({
         title: "Gagal mengupdate status",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Take available package mutation
+  const takePackageMutation = useMutation({
+    mutationFn: async (packageId: number) => {
+      const response = await apiRequest("POST", `/api/packages/${packageId}/take`);
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Paket berhasil diambil",
+        description: "Paket telah ditugaskan kepada Anda",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/packages/kurir"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/packages/available"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Gagal mengambil paket",
         description: error.message,
         variant: "destructive",
       });
@@ -137,6 +168,61 @@ export default function KurirPackages() {
       default: return priority;
     }
   };
+
+  const AvailablePackageCard = ({ pkg }: { pkg: PackageItem }) => (
+    <Card className="mb-4">
+      <CardContent className="p-4">
+        <div className="flex justify-between items-start mb-3">
+          <div>
+            <h3 className="font-semibold text-lg">{pkg.packageId}</h3>
+            <p className="text-sm text-gray-600">{pkg.recipientName}</p>
+          </div>
+          <div className="flex gap-2">
+            <Badge className={priorityColors[pkg.priority as keyof typeof priorityColors] || "bg-gray-100 text-gray-800"}>
+              {getPriorityText(pkg.priority)}
+            </Badge>
+            <Badge className="bg-green-100 text-green-800">
+              <span className="flex items-center gap-1">
+                <Package className="w-4 h-4" />
+                Tersedia
+              </span>
+            </Badge>
+          </div>
+        </div>
+
+        <div className="space-y-2 mb-4">
+          <div className="flex items-center text-sm text-gray-600">
+            <MapPin className="w-4 h-4 mr-2" />
+            {pkg.recipientAddress}
+          </div>
+          <div className="flex items-center text-sm text-gray-600">
+            <Clock className="w-4 h-4 mr-2" />
+            {new Date(pkg.createdAt).toLocaleDateString('id-ID')}
+          </div>
+          {pkg.notes && (
+            <div className="text-sm text-gray-600">
+              <strong>Catatan:</strong> {pkg.notes}
+            </div>
+          )}
+        </div>
+
+        <Button
+          onClick={() => takePackageMutation.mutate(pkg.id)}
+          disabled={takePackageMutation.isPending}
+          className="w-full"
+        >
+          {takePackageMutation.isPending ? (
+            "Mengambil..."
+          ) : (
+            <>
+              <Package className="w-4 h-4 mr-2" />
+              Ambil Paket
+            </>
+          )}
+        </Button>
+      </CardContent>
+    </Card>
+  );
 
   const PackageCard = ({ pkg }: { pkg: PackageItem }) => (
     <Card className="mb-4">
@@ -236,6 +322,7 @@ export default function KurirPackages() {
   const assignedPackages = (packages as PackageItem[]).filter((pkg: PackageItem) => pkg.status === "assigned");
   const inTransitPackages = (packages as PackageItem[]).filter((pkg: PackageItem) => ["picked_up", "in_transit"].includes(pkg.status));
   const completedPackages = (packages as PackageItem[]).filter((pkg: PackageItem) => ["delivered", "failed"].includes(pkg.status));
+  const available = (availablePackages as PackageItem[]).filter((pkg: PackageItem) => pkg.status === "created" && !pkg.assignedKurirId);
 
   return (
     <div className="container mx-auto p-6">
@@ -342,8 +429,11 @@ export default function KurirPackages() {
       </div>
 
       {/* Packages Tabs */}
-      <Tabs defaultValue="assigned" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+      <Tabs defaultValue="available" className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="available">
+            Tersedia ({available.length})
+          </TabsTrigger>
           <TabsTrigger value="assigned">
             Ditugaskan ({assignedPackages.length})
           </TabsTrigger>
@@ -354,6 +444,32 @@ export default function KurirPackages() {
             Selesai ({completedPackages.length})
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="available" className="mt-6">
+          {available.length === 0 ? (
+            <Alert>
+              <Package className="w-4 h-4" />
+              <AlertDescription>
+                Tidak ada paket yang tersedia untuk diambil saat ini.
+              </AlertDescription>
+            </Alert>
+          ) : (
+            <div>
+              <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="flex items-center gap-2 text-blue-800">
+                  <Package className="w-5 h-5" />
+                  <h3 className="font-semibold">Paket Tersedia untuk Diambil</h3>
+                </div>
+                <p className="text-sm text-blue-700 mt-1">
+                  Pilih paket yang ingin Anda ambil. Paket yang sudah diambil kurir lain tidak dapat diambil ulang.
+                </p>
+              </div>
+              {available.map((pkg: PackageItem) => (
+                <AvailablePackageCard key={pkg.id} pkg={pkg} />
+              ))}
+            </div>
+          )}
+        </TabsContent>
 
         <TabsContent value="assigned" className="mt-6">
           {assignedPackages.length === 0 ? (
