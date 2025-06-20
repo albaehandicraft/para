@@ -183,7 +183,7 @@ export default function PengirimanManagement() {
       toast({ title: "Error", description: "Package weight must be greater than 0", variant: "destructive" });
       return;
     }
-    if (!formData.dimensions.trim()) {
+    if (!formData.dimensions?.trim()) {
       toast({ title: "Error", description: "Package dimensions are required", variant: "destructive" });
       return;
     }
