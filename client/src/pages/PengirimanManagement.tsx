@@ -10,8 +10,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Package, Plus, Eye, Edit, User, MapPin, Clock } from "lucide-react";
+import { Package, Plus, Eye, Edit, User, MapPin, Clock, Search, Scan } from "lucide-react";
+import { BarcodeScanner } from "@/components/BarcodeScanner";
 
 interface PackageData {
   recipientName: string;
@@ -30,6 +32,9 @@ interface PackageData {
 
 export default function PengirimanManagement() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeTab, setActiveTab] = useState("all");
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [formData, setFormData] = useState<PackageData>({
     recipientName: "",
     recipientPhone: "",
@@ -151,6 +156,35 @@ export default function PengirimanManagement() {
   const handleAssignPackage = (packageId: number, kurirId: number) => {
     assignPackageMutation.mutate({ packageId, kurirId });
   };
+
+  const handleBarcodeSearch = (result: any) => {
+    if (result?.text) {
+      setSearchQuery(result.text);
+      setIsScannerOpen(false);
+      toast({
+        title: "Barcode scanned",
+        description: `Searching for: ${result.text}`,
+      });
+    }
+  };
+
+  // Filter packages based on search query and status
+  const filteredPackages = (packages || []).filter((pkg: any) => {
+    const matchesSearch = searchQuery === "" || 
+      pkg.packageId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      pkg.barcode?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      pkg.recipientName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      pkg.recipientPhone?.includes(searchQuery) ||
+      pkg.resi?.toLowerCase().includes(searchQuery.toLowerCase());
+
+    if (activeTab === "all") return matchesSearch;
+    if (activeTab === "created") return matchesSearch && pkg.status === "created";
+    if (activeTab === "assigned") return matchesSearch && pkg.status === "assigned";
+    if (activeTab === "in_transit") return matchesSearch && ["picked_up", "in_transit"].includes(pkg.status);
+    if (activeTab === "completed") return matchesSearch && ["delivered", "failed"].includes(pkg.status);
+    
+    return matchesSearch;
+  });
 
   const getStatusBadge = (status: string) => {
     const statusColors = {
@@ -398,12 +432,37 @@ export default function PengirimanManagement() {
         </Dialog>
       </div>
 
-      {/* Packages Table */}
+      {/* Search and Filter Controls */}
       <Card>
         <CardHeader>
-          <CardTitle>All Pengiriman</CardTitle>
+          <CardTitle>Search & Filter Packages</CardTitle>
         </CardHeader>
         <CardContent>
+          <div className="flex flex-col sm:flex-row gap-4 items-center">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Input
+                placeholder="Search by Package ID, Barcode, Recipient Name, Phone, or Resi..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => setIsScannerOpen(true)}
+              className="whitespace-nowrap"
+            >
+              <Scan className="w-4 h-4 mr-2" />
+              Scan Barcode
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Package Categories */}
+      <Card>
+        <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
