@@ -190,7 +190,48 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPackagesByKurir(kurirId: number): Promise<Package[]> {
-    return await db.select().from(packages).where(eq(packages.assignedKurirId, kurirId));
+    try {
+      const freshClient = await pgPool.connect();
+      try {
+        await freshClient.query('BEGIN');
+        const result = await freshClient.query(`
+          SELECT * FROM packages 
+          WHERE assigned_kurir_id = $1
+          ORDER BY created_at DESC
+        `, [kurirId]);
+        await freshClient.query('COMMIT');
+        
+        const packageRows = result.rows.map(row => ({
+          id: row.id,
+          packageId: row.package_id,
+          barcode: row.barcode,
+          recipientName: row.recipient_name,
+          recipientPhone: row.recipient_phone,
+          recipientAddress: row.recipient_address,
+          priority: row.priority,
+          status: row.status,
+          assignedKurirId: row.assigned_kurir_id,
+          createdBy: row.created_by,
+          approvedBy: row.approved_by,
+          deliveredAt: row.delivered_at,
+          deliveryProof: row.delivery_proof,
+          notes: row.notes,
+          createdAt: row.created_at,
+          updatedAt: row.updated_at,
+          resi: row.resi
+        }));
+        
+        return packageRows as Package[];
+      } catch (queryError) {
+        await freshClient.query('ROLLBACK');
+        throw queryError;
+      } finally {
+        freshClient.release();
+      }
+    } catch (error) {
+      console.error("Error fetching packages for kurir:", error);
+      return [];
+    }
   }
 
   async getAvailablePackages(): Promise<Package[]> {
@@ -222,7 +263,8 @@ export class DatabaseStorage implements IStorage {
           deliveryProof: row.delivery_proof,
           notes: row.notes,
           createdAt: row.created_at,
-          updatedAt: row.updated_at
+          updatedAt: row.updated_at,
+          resi: row.resi
         }));
         
         return packageRows as Package[];
@@ -283,27 +325,69 @@ export class DatabaseStorage implements IStorage {
   }
 
   async assignPackageToKurir(packageId: number, kurirId: number, assignedBy: number): Promise<Package | undefined> {
-    const [pkg] = await db
-      .update(packages)
-      .set({ 
-        assignedKurirId: kurirId, 
-        status: "assigned",
-        updatedAt: new Date() 
-      })
-      .where(eq(packages.id, packageId))
-      .returning();
-    
-    if (pkg) {
-      await db.insert(packageStatusHistory).values({
-        packageId,
-        fromStatus: "created",
-        toStatus: "assigned",
-        changedBy: assignedBy,
-        notes: `Assigned to kurir ID: ${kurirId}`,
-      });
+    try {
+      const freshClient = await pgPool.connect();
+      try {
+        await freshClient.query('BEGIN');
+        
+        // Update package assignment
+        const updateResult = await freshClient.query(`
+          UPDATE packages 
+          SET assigned_kurir_id = $1, status = 'assigned', updated_at = NOW()
+          WHERE id = $2 AND (assigned_kurir_id IS NULL OR status = 'created')
+          RETURNING *
+        `, [kurirId, packageId]);
+        
+        if (updateResult.rows.length === 0) {
+          await freshClient.query('ROLLBACK');
+          throw new Error("Package not available or already assigned");
+        }
+        
+        const updatedPackage = updateResult.rows[0];
+        
+        // Log status change in package_status_history if table exists
+        try {
+          await freshClient.query(`
+            INSERT INTO package_status_history (package_id, from_status, to_status, changed_by, notes, created_at)
+            VALUES ($1, 'created', 'assigned', $2, $3, NOW())
+          `, [packageId, assignedBy, `Assigned to kurir ID: ${kurirId}`]);
+        } catch (historyError) {
+          // History table might not exist, continue without it
+          console.log("Package status history not recorded:", historyError);
+        }
+        
+        await freshClient.query('COMMIT');
+        
+        return {
+          id: updatedPackage.id,
+          packageId: updatedPackage.package_id,
+          barcode: updatedPackage.barcode,
+          recipientName: updatedPackage.recipient_name,
+          recipientPhone: updatedPackage.recipient_phone,
+          recipientAddress: updatedPackage.recipient_address,
+          priority: updatedPackage.priority,
+          status: updatedPackage.status,
+          assignedKurirId: updatedPackage.assigned_kurir_id,
+          createdBy: updatedPackage.created_by,
+          approvedBy: updatedPackage.approved_by,
+          deliveredAt: updatedPackage.delivered_at,
+          deliveryProof: updatedPackage.delivery_proof,
+          notes: updatedPackage.notes,
+          createdAt: updatedPackage.created_at,
+          updatedAt: updatedPackage.updated_at,
+          resi: updatedPackage.resi
+        } as Package;
+        
+      } catch (queryError) {
+        await freshClient.query('ROLLBACK');
+        throw queryError;
+      } finally {
+        freshClient.release();
+      }
+    } catch (error) {
+      console.error("Error assigning package to kurir:", error);
+      throw error;
     }
-    
-    return pkg || undefined;
   }
 
   async createAttendance(attendanceData: InsertAttendance): Promise<Attendance> {
