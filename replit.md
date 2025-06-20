@@ -122,6 +122,23 @@ This is a full-stack delivery management system built with React, Express.js, an
 - June 19, 2025. Configured external Neon database connection and created demo users
 - June 20, 2025. Added resi (tracking number) column to packages table and created 20 dummy packages with realistic data
 
+## Database Configuration
+
+**IMPORTANT:** Always use the external Neon database, NOT the Replit internal database.
+
+External Database Connection:
+- Host: ep-shy-flower-a123hzhg-pooler.ap-southeast-1.aws.neon.tech
+- Database: paradelivery  
+- User: paradelivery_owner
+- Connection String: `postgresql://paradelivery_owner:npg_uV6KZbn4dCAy@ep-shy-flower-a123hzhg-pooler.ap-southeast-1.aws.neon.tech/paradelivery?sslmode=require`
+
+The application must always connect to this external database for all operations including:
+- Package management and dummy data creation
+- User authentication and management
+- Attendance tracking
+- All SQL operations and migrations
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
+Database preference: Always use external Neon database (paradelivery) not Replit internal database.
