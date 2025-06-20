@@ -274,12 +274,13 @@ export class DatabaseStorage implements IStorage {
         const packageRows = result.rows;
         console.log(`Successfully fetched ${packageRows.length} packages from external Neon DB`);
         
-        // Add resi tracking numbers based on package IDs  
-        packageRows.forEach((pkg) => {
+        // Add resi tracking numbers and map package data
+        const mappedPackages = packageRows.map((pkg) => {
           pkg.resi = `RESI${String(pkg.id).padStart(6, '0')}`;
+          return mapRowToPackage(pkg);
         });
         
-        return packageRows as Package[];
+        return mappedPackages as Package[];
       } catch (queryError) {
         await freshClient.query('ROLLBACK');
         throw queryError;

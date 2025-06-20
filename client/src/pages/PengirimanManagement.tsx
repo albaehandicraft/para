@@ -35,6 +35,8 @@ export default function PengirimanManagement() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("all");
   const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [selectedPackage, setSelectedPackage] = useState<any>(null);
   const [formData, setFormData] = useState<PackageData>({
     recipientName: "",
     recipientPhone: "",
@@ -208,6 +210,11 @@ export default function PengirimanManagement() {
         description: `Searching for: ${result.text}`,
       });
     }
+  };
+
+  const handleViewPackage = (pkg: any) => {
+    setSelectedPackage(pkg);
+    setIsViewModalOpen(true);
   };
 
   // Filter packages based on search query and status
@@ -576,7 +583,11 @@ export default function PengirimanManagement() {
                           <td className="py-3 px-4">{getStatusBadge(pkg.status)}</td>
                           <td className="py-3 px-4">
                             <div className="flex items-center space-x-2">
-                              <Button variant="outline" size="sm">
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => handleViewPackage(pkg)}
+                              >
                                 <Eye className="w-3 h-3 mr-1" />
                                 View
                               </Button>
@@ -606,6 +617,129 @@ export default function PengirimanManagement() {
           </Tabs>
         </CardContent>
       </Card>
+
+      {/* Package Details View Modal */}
+      <Dialog open={isViewModalOpen} onOpenChange={setIsViewModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Package Details - {selectedPackage?.packageId}</DialogTitle>
+          </DialogHeader>
+          {selectedPackage && (
+            <div className="space-y-6">
+              {/* Package Information */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-gray-500">Package ID</Label>
+                  <p className="text-sm font-medium">{selectedPackage.packageId}</p>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-gray-500">Resi</Label>
+                  <p className="text-sm font-medium text-blue-600">{selectedPackage.resi}</p>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-gray-500">Barcode</Label>
+                  <p className="text-sm font-mono">{selectedPackage.barcode}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-gray-500">Status</Label>
+                  <div>{getStatusBadge(selectedPackage.status)}</div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-gray-500">Priority</Label>
+                  <div>{getPriorityBadge(selectedPackage.priority)}</div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-gray-500">Assigned Kurir</Label>
+                  <p className="text-sm">{selectedPackage.assignedKurir || "Unassigned"}</p>
+                </div>
+              </div>
+
+              {/* Sender Information */}
+              <div>
+                <h3 className="text-lg font-medium text-gray-900 mb-3 border-b pb-2">Sender Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-gray-500">Sender Name</Label>
+                    <p className="text-sm">{selectedPackage.senderName || "-"}</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-gray-500">Sender Phone</Label>
+                    <p className="text-sm">{selectedPackage.senderPhone || "-"}</p>
+                  </div>
+                  <div className="col-span-2 space-y-2">
+                    <Label className="text-sm font-medium text-gray-500">Pickup Address</Label>
+                    <p className="text-sm">{selectedPackage.pickupAddress || "-"}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Recipient Information */}
+              <div>
+                <h3 className="text-lg font-medium text-gray-900 mb-3 border-b pb-2">Recipient Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-gray-500">Recipient Name</Label>
+                    <p className="text-sm">{selectedPackage.recipientName}</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-gray-500">Recipient Phone</Label>
+                    <p className="text-sm">{selectedPackage.recipientPhone}</p>
+                  </div>
+                  <div className="col-span-2 space-y-2">
+                    <Label className="text-sm font-medium text-gray-500">Delivery Address</Label>
+                    <p className="text-sm">{selectedPackage.recipientAddress}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Package Details */}
+              <div>
+                <h3 className="text-lg font-medium text-gray-900 mb-3 border-b pb-2">Package Details</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-gray-500">Weight</Label>
+                    <p className="text-sm">{selectedPackage.weight ? `${selectedPackage.weight} kg` : "-"}</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-gray-500">Dimensions</Label>
+                    <p className="text-sm">{selectedPackage.dimensions || "-"}</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-gray-500">Declared Value</Label>
+                    <p className="text-sm">{selectedPackage.value ? `Rp ${selectedPackage.value.toLocaleString()}` : "-"}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Notes */}
+              {selectedPackage.notes && (
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-3 border-b pb-2">Special Instructions</h3>
+                  <p className="text-sm bg-gray-50 p-3 rounded">{selectedPackage.notes}</p>
+                </div>
+              )}
+
+              {/* Timestamps */}
+              <div>
+                <h3 className="text-lg font-medium text-gray-900 mb-3 border-b pb-2">Timeline</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-gray-500">Created At</Label>
+                    <p className="text-sm">{selectedPackage.createdAt ? new Date(selectedPackage.createdAt).toLocaleString() : "-"}</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-gray-500">Last Updated</Label>
+                    <p className="text-sm">{selectedPackage.updatedAt ? new Date(selectedPackage.updatedAt).toLocaleString() : "-"}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Barcode Scanner Modal */}
       {isScannerOpen && (
