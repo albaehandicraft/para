@@ -76,6 +76,9 @@ export default function KurirPackages() {
       });
       queryClient.invalidateQueries({ queryKey: ["/api/packages/kurir"] });
       queryClient.invalidateQueries({ queryKey: ["/api/packages/available"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/packages"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/packages/kurir", user?.id] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/metrics"] });
       setSelectedPackage(null);
       setDeliveryNotes("");
     },
@@ -101,6 +104,8 @@ export default function KurirPackages() {
       });
       queryClient.invalidateQueries({ queryKey: ["/api/packages/kurir"] });
       queryClient.invalidateQueries({ queryKey: ["/api/packages/available"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/packages"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/packages/kurir", user?.id] });
     },
     onError: (error: any) => {
       toast({

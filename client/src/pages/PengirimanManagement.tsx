@@ -82,6 +82,8 @@ export default function PengirimanManagement() {
         priority: "normal",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/packages"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/packages/available"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/metrics"] });
     },
     onError: (error: any) => {
       toast({
@@ -103,6 +105,9 @@ export default function PengirimanManagement() {
         description: "Package has been assigned to kurir successfully",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/packages"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/packages/kurir"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/packages/available"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/metrics"] });
     },
     onError: (error: any) => {
       toast({
