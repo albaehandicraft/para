@@ -440,7 +440,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Filter by search term if specified
       if (search) {
         const searchTerm = (search as string).toLowerCase();
-        records = records.filter(record => 
+        records = records.filter((record: any) => 
           record.kurirName?.toLowerCase().includes(searchTerm) ||
           record.notes?.toLowerCase().includes(searchTerm)
         );

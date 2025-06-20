@@ -34,9 +34,10 @@ export interface IStorage {
   // Attendance management
   createAttendance(attendanceData: InsertAttendance): Promise<Attendance>;
   getAttendanceByDate(kurirId: number, date: Date): Promise<Attendance | undefined>;
-  updateAttendanceStatus(id: number, status: string, approvedBy: number): Promise<Attendance | undefined>;
-  getAttendanceByDateRange(startDate: Date, endDate: Date): Promise<Attendance[]>;
+  updateAttendanceStatus(id: number, status: string, approvedBy: number, notes?: string): Promise<Attendance | undefined>;
+  getAttendanceByDateRange(startDate: Date, endDate: Date): Promise<any[]>;
   getKurirAttendanceHistory(kurirId: number, startDate: Date, endDate: Date): Promise<Attendance[]>;
+  getKurirAttendanceSummary(startDate: Date, endDate: Date): Promise<any[]>;
   
   // Geofencing
   createGeofenceZone(zoneData: InsertGeofenceZone): Promise<GeofenceZone>;
@@ -383,18 +384,37 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateAttendanceStatus(id: number, status: string, approvedBy: number, notes?: string): Promise<Attendance | undefined> {
+    const updateData: any = { status: status as any, approvedBy };
+    if (notes) updateData.notes = notes;
+    
     const [att] = await db
       .update(attendance)
-      .set({ status: status as any, approvedBy })
+      .set(updateData)
       .where(eq(attendance.id, id))
       .returning();
     return att || undefined;
   }
 
-  async getAttendanceByDateRange(startDate: Date, endDate: Date): Promise<Attendance[]> {
-    return await db
-      .select()
+  async getAttendanceByDateRange(startDate: Date, endDate: Date): Promise<any[]> {
+    const records = await db
+      .select({
+        id: attendance.id,
+        kurirId: attendance.kurirId,
+        kurirName: users.fullName,
+        date: attendance.date,
+        checkInTime: attendance.checkInTime,
+        checkOutTime: attendance.checkOutTime,
+        checkInLat: attendance.checkInLat,
+        checkInLng: attendance.checkInLng,
+        checkOutLat: attendance.checkOutLat,
+        checkOutLng: attendance.checkOutLng,
+        status: attendance.status,
+        approvedBy: attendance.approvedBy,
+        notes: attendance.notes,
+        createdAt: attendance.createdAt,
+      })
       .from(attendance)
+      .leftJoin(users, eq(attendance.kurirId, users.id))
       .where(
         and(
           gte(attendance.date, startDate),
@@ -402,6 +422,21 @@ export class DatabaseStorage implements IStorage {
         )
       )
       .orderBy(desc(attendance.date));
+
+    // Calculate working hours for each record
+    return records.map(record => {
+      let workingHours = 0;
+      if (record.checkInTime && record.checkOutTime) {
+        const checkIn = new Date(record.checkInTime);
+        const checkOut = new Date(record.checkOutTime);
+        workingHours = (checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60);
+      }
+      
+      return {
+        ...record,
+        workingHours: Math.round(workingHours * 100) / 100
+      };
+    });
   }
 
   async getKurirAttendanceHistory(kurirId: number, startDate: Date, endDate: Date): Promise<Attendance[]> {
@@ -416,6 +451,94 @@ export class DatabaseStorage implements IStorage {
         )
       )
       .orderBy(desc(attendance.date));
+  }
+
+  async getKurirAttendanceSummary(startDate: Date, endDate: Date): Promise<any[]> {
+    // Get all attendance records with kurir names for the date range
+    const records = await db
+      .select({
+        id: attendance.id,
+        kurirId: attendance.kurirId,
+        kurirName: users.fullName,
+        date: attendance.date,
+        checkInTime: attendance.checkInTime,
+        checkOutTime: attendance.checkOutTime,
+        status: attendance.status,
+        notes: attendance.notes,
+      })
+      .from(attendance)
+      .leftJoin(users, eq(attendance.kurirId, users.id))
+      .where(
+        and(
+          gte(attendance.date, startDate),
+          lte(attendance.date, endDate)
+        )
+      )
+      .orderBy(desc(attendance.date));
+
+    // Group records by kurir and calculate summary statistics
+    const kurirGroups = records.reduce((acc, record) => {
+      const kurirId = record.kurirId;
+      if (!acc[kurirId]) {
+        acc[kurirId] = {
+          kurirId,
+          kurirName: record.kurirName || "Unknown",
+          records: []
+        };
+      }
+      acc[kurirId].records.push(record);
+      return acc;
+    }, {} as any);
+
+    // Calculate summary for each kurir
+    return Object.values(kurirGroups).map((group: any) => {
+      const { records } = group;
+      const totalDays = records.length;
+      const presentDays = records.filter((r: any) => r.status === "present" || r.status === "approved").length;
+      const absentDays = records.filter((r: any) => r.status === "absent" || r.status === "rejected").length;
+      const pendingDays = records.filter((r: any) => r.status === "pending").length;
+      
+      // Calculate working hours
+      let totalWorkingHours = 0;
+      records.forEach((r: any) => {
+        if (r.checkInTime && r.checkOutTime) {
+          const checkIn = new Date(r.checkInTime);
+          const checkOut = new Date(r.checkOutTime);
+          const hours = (checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60);
+          totalWorkingHours += hours;
+        }
+      });
+      
+      // Count late check-ins (after 8:30 AM) and early check-outs (before 5:00 PM)
+      const lateCheckIns = records.filter((r: any) => {
+        if (!r.checkInTime) return false;
+        const checkIn = new Date(r.checkInTime);
+        const hours = checkIn.getHours();
+        const minutes = checkIn.getMinutes();
+        return hours > 8 || (hours === 8 && minutes > 30);
+      }).length;
+
+      const earlyCheckOuts = records.filter((r: any) => {
+        if (!r.checkOutTime) return false;
+        const checkOut = new Date(r.checkOutTime);
+        const hours = checkOut.getHours();
+        return hours < 17;
+      }).length;
+
+      return {
+        kurirId: group.kurirId,
+        kurirName: group.kurirName,
+        totalDays,
+        presentDays,
+        absentDays,
+        pendingDays,
+        attendanceRate: totalDays > 0 ? (presentDays / totalDays) * 100 : 0,
+        totalWorkingHours: Math.round(totalWorkingHours * 100) / 100,
+        averageWorkingHours: totalDays > 0 ? Math.round((totalWorkingHours / totalDays) * 100) / 100 : 0,
+        lateCheckIns,
+        earlyCheckOuts
+      };
+    });
   }
 
   async createGeofenceZone(zoneData: InsertGeofenceZone): Promise<GeofenceZone> {
