@@ -120,6 +120,7 @@ This is a full-stack delivery management system built with React, Express.js, an
 
 - June 19, 2025. Initial setup
 - June 19, 2025. Configured external Neon database connection and created demo users
+- June 20, 2025. Added resi (tracking number) column to packages table and created 20 dummy packages with realistic data
 
 ## User Preferences
 
