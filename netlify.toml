@@ -1,6 +1,5 @@
 [build]
-  base = "."
-  command = "npm run build && cp _redirects dist/public/_redirects"
+  command = "vite build"
   publish = "dist/public"
 
 [[redirects]]
