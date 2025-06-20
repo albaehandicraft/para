@@ -217,6 +217,14 @@ export default function PengirimanManagement() {
     setIsViewModalOpen(true);
   };
 
+  const handleReassignPackage = (pkg: any) => {
+    // Create a simple reassignment dialog
+    toast({
+      title: "Reassignment",
+      description: `Package ${pkg.packageId} is currently assigned to ${pkg.assignedKurir}. Use the assign dropdown to change kurir.`,
+    });
+  };
+
   // Filter packages based on search query and status
   const filteredPackages = (packages || []).filter((pkg: any) => {
     const matchesSearch = searchQuery === "" || 
@@ -593,8 +601,22 @@ export default function PengirimanManagement() {
                               </Button>
                               {pkg.status === "created" && (
                                 <Select onValueChange={(value) => handleAssignPackage(pkg.id, parseInt(value))}>
-                                  <SelectTrigger className="w-24">
+                                  <SelectTrigger className="w-32">
                                     <SelectValue placeholder="Assign" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {kurirUsers.map((kurir: any) => (
+                                      <SelectItem key={kurir.id} value={kurir.id.toString()}>
+                                        {kurir.fullName}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              )}
+                              {(pkg.status === "assigned" || pkg.status === "picked_up") && pkg.assignedKurir && (
+                                <Select onValueChange={(value) => handleAssignPackage(pkg.id, parseInt(value))}>
+                                  <SelectTrigger className="w-32">
+                                    <SelectValue placeholder="Reassign" />
                                   </SelectTrigger>
                                   <SelectContent>
                                     {kurirUsers.map((kurir: any) => (

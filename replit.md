@@ -121,6 +121,11 @@ This is a full-stack delivery management system built with React, Express.js, an
 - June 19, 2025. Initial setup
 - June 19, 2025. Configured external Neon database connection and created demo users
 - June 20, 2025. Added resi (tracking number) column to packages table and created 20 dummy packages with realistic data
+- June 20, 2025. Enhanced create package form with comprehensive fields (sender info, package details, assignment)
+- June 20, 2025. Fixed package assignment workflow - status correctly changes from 'created' to 'assigned' when kurir takes package
+- June 20, 2025. Implemented comprehensive View functionality for package details with organized sections
+- June 20, 2025. Enhanced database queries with LEFT JOIN to display assigned kurir names instead of "Unassigned"
+- June 20, 2025. Added admin reassignment capabilities for packages in assigned/picked_up status
 
 ## Database Configuration
 
